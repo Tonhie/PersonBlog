@@ -66,11 +66,12 @@
     <h1>Tonhie's Blog</h1>
     <div id="post-container">加载中...</div>
     <script>
+        const API_URL = "";
         // 当页面加载完成时执行
         async function fetchPosts() {
             try {
                 // 1. 调用你写的 FastAPI 接口
-                const response = await fetch('http://127.0.0.1:8000/posts');
+                const response = await fetch(`${API_URL}/posts`);
                 const result = await response.json();
                 
                 const container = document.getElementById('post-container');
@@ -111,7 +112,7 @@
             const content = document.getElementById('content').value;
 
             try {
-                const response = await fetch('http://127.0.0.1:8000/posts', {
+                const response = await fetch(`${API_URL}/posts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ author, title, content })
