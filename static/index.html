@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tonhie.log</title>
     <!-- Markdown & Formula & Code highlight -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -138,9 +138,25 @@
         }
         
         .modal-divider {
-            border-bottom: 1px dashed var(--line-color);
-            margin: 15px 0 25px 0;
-            opacity: 0.2;
+            border-bottom: 2px dashed var(--line-color);
+            margin: 25px 0 35px 0;
+            position: relative;
+            opacity: 1;
+            text-align: center;
+        }
+        .modal-divider::after {
+            content: "[ LOG ENTRY BEGIN ]";
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-color);
+            padding: 0 15px;
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            color: var(--line-color);
+            font-weight: bold;
+            white-space: nowrap;
         }
 
         /* =================文章卡片================= */
@@ -211,12 +227,12 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: rgba(240, 240, 240, 0.92);
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(4px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -229,6 +245,7 @@
             max-width: 800px;
             height: 90vh;
             transition: max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.15));
         }
 
         .modal-overlay.active {
@@ -246,7 +263,7 @@
             position: relative;
             box-sizing: border-box;
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), flex 0.4s;
-            transform: scale(0.95) translateY(20px);
+            transform: scale(0.95) translateY(40px);
         }
 
         .modal-overlay.active .modal-content {
@@ -270,7 +287,7 @@
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
-            transform: scale(0.95) translateY(20px);
+            transform: scale(0.95) translateY(40px);
         }
         .modal-overlay.active.injected .modal-comments {
             width: 450px;
@@ -357,6 +374,7 @@
             cursor: pointer;
             display: inline-block;
             width: 15px;
+            padding: 0 4px;
             text-align: center;
             user-select: none;
             transition: color 0.1s;
@@ -427,6 +445,113 @@
         .markdown-body img { max-width: 100%; border: 1px solid var(--line-color); display: block; margin: 10px 0; }
         .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-family: var(--font-mono); border-bottom: 2px dashed var(--line-color); padding-bottom: 5px; margin-top: 30px; letter-spacing: -0.5px;}
         .markdown-body p { margin-bottom: 1em; }
+
+        /* ================= 移动端特别适配 ================= */
+        body.mobile-mode {
+            margin: 20px auto;
+            padding: 0 15px;
+            max-width: 100%;
+        }
+        .mobile-mode h1 { font-size: 1.8em; }
+        .mobile-mode .post-card { padding: 15px; }
+        .mobile-mode .journal-cmd-line { flex-wrap: wrap; font-size: 0.9em; }
+        .mobile-mode .bash-prefix { display: block; margin-bottom: 4px; width: 100%; }
+        
+        .mobile-mode .modal-overlay { align-items: stretch; }
+        .mobile-mode .modal-wrapper {
+            height: 100%;
+            max-width: 100vw;
+            flex-direction: column;
+            filter: none;
+            box-shadow: none;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        .mobile-mode .modal-content {
+            padding: 20px;
+            border: none;
+            flex: 1;
+            box-sizing: border-box;
+            transform: scale(1) translateY(100px);
+        }
+        .mobile-mode .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        .mobile-mode.modal-overlay.active.injected .modal-wrapper,
+        .mobile-mode .modal-overlay.active.injected .modal-wrapper {
+            max-width: 100vw;
+        }
+        .mobile-mode .modal-comments {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            max-width: 100vw;
+            height: 85vh;
+            border-left: none;
+            border-top: 2px dashed var(--line-color);
+            background: var(--bg-color);
+            padding: 20px 15px;
+            box-sizing: border-box;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 50;
+        }
+        .mobile-mode .modal-overlay.active.injected .modal-comments {
+            transform: translateY(0);
+        }
+        .mobile-mode .modal-controls { position: relative; top: 0; right: 0; margin-bottom: 15px; justify-content: space-between; z-index: 10; }
+
+        /* Mobile specific comments collapse/expand */
+        .mobile-mode .rating-wrapper,
+        .mobile-mode .submit-comment-btn {
+            display: none;
+        }
+        .mobile-mode #comment-input,
+        .mobile-mode .terminal-input-overlay {
+            height: 44px;
+            min-height: 44px;
+            white-space: nowrap;
+            overflow: hidden;
+            font-size: 16px; /* 阻止iOS点击输入框时自动放大 */
+        }
+        .mobile-mode #comment-input::placeholder { color: transparent; }
+        
+        .mobile-mode .modal-comments.input-expanded .rating-wrapper {
+            display: flex;
+        }
+        .mobile-mode .modal-comments.input-expanded .submit-comment-btn {
+            display: block;
+        }
+        .mobile-mode .modal-comments.input-expanded #comment-input,
+        .mobile-mode .modal-comments.input-expanded .terminal-input-overlay {
+            height: 100px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+        .mobile-mode .rating-wrapper {
+            font-size: 0.95em; /* 进一步缩小整个评分栏字体以防换行 */
+        }
+        .mobile-mode .rating-wrapper .r-cell {
+            width: 16px; 
+            height: 16px;
+            padding: 0; /* 移除左右间距 */
+            font-size: 0.9em;
+            line-height: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            /* Fallback basic media queries inline with mobile-mode class */
+            body { margin: 20px auto; padding: 0 15px; max-width: 100%; }
+            .modal-overlay { align-items: stretch; }
+            .modal-wrapper { height: 100%; max-width: 100%; flex-direction: column; filter: none; box-sizing: border-box; }
+            .modal-content { padding: 20px; border: none; flex: 1; box-sizing: border-box; }
+            .modal-comments { box-sizing: border-box; width: 100%; max-width: 100%; }
+            .modal-overlay.active.injected .modal-comments {
+                width: 100%; height: 50vh; border-left: none; border-top: 2px dashed var(--line-color); padding: 20px 15px; box-sizing: border-box;
+            }
+        }
     </style>
 </head>
 <body>
@@ -470,13 +595,13 @@
                 </div>
                 <!-- 打分组件 -->
                 <div class="rating-wrapper">
-                    <span>> SET_RATING: [</span>
+                    <span>> METRIC: [</span>
                     <span id="rate-stars">
-                        <span class="r-cell" onclick="setRating(1)" style="padding: 0 4px;">■</span>
-                        <span class="r-cell" onclick="setRating(2)" style="padding: 0 4px;">■</span>
-                        <span class="r-cell" onclick="setRating(3)" style="padding: 0 4px;">■</span>
-                        <span class="r-cell" onclick="setRating(4)" style="padding: 0 4px;">■</span>
-                        <span class="r-cell" onclick="setRating(5)" style="padding: 0 4px;">■</span>
+                        <span class="r-cell" onclick="setRating(1)">■</span>
+                        <span class="r-cell" onclick="setRating(2)">■</span>
+                        <span class="r-cell" onclick="setRating(3)">■</span>
+                        <span class="r-cell" onclick="setRating(4)">■</span>
+                        <span class="r-cell" onclick="setRating(5)">■</span>
                     </span>
                     <span>] <span id="rate-text">5</span>/5</span>
                 </div>
@@ -492,6 +617,12 @@
     </div>
 
     <script>
+        // 移动端侦测识别 (User-Agent)
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobileDevice) {
+            document.body.classList.add('mobile-mode');
+        }
+
         const API_URL = window.location.origin;
         let globalPosts = [];
         let typingInterval = null;
@@ -536,22 +667,52 @@
 
         let visitorIP = 'guest';
 
-        function renderIPHTML(ip) {
+        function renderIPHTML(ip, isComment = false) {
             if (!ip) return '<span class="ip-box">UNKNOWN</span>';
-            // IPV6 Terminal Style Truncation
-            if (ip.length > 15 && ip.includes(':')) {
-                const parts = ip.split(':').filter(Boolean);
-                if (parts.length >= 2) {
-                    const head = parts[0] + ':';
-                    const tail = ':' + parts[parts.length - 1];
-                    const mid = parts.slice(1, parts.length - 1).join(':');
-                    return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${head}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${mid}</span><span class="ip-part">${tail}</span></span>`;
+            if (isMobileDevice && isComment) {
+                // Mobile comment IP: gets 5 chars + ... + rest
+                if (ip.length > 5) {
+                    const start = ip.substring(0, 5);
+                    const end = ip.substring(5);
+                    return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${start}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${end}</span></span>`;
                 }
-                const start = ip.substring(0, 15);
-                const end = ip.substring(15);
-                return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${start}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${end}</span></span>`;
+            } else {
+                // IPV6 Terminal Style Truncation
+                if (ip.length > 15 && ip.includes(':')) {
+                    const parts = ip.split(':').filter(Boolean);
+                    if (parts.length >= 2) {
+                        const head = parts[0] + ':';
+                        const tail = ':' + parts[parts.length - 1];
+                        const mid = parts.slice(1, parts.length - 1).join(':');
+                        return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${head}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${mid}</span><span class="ip-part">${tail}</span></span>`;
+                    }
+                    const start = ip.substring(0, 15);
+                    const end = ip.substring(15);
+                    return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${start}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${end}</span></span>`;
+                }
             }
             return `<span class="ip-box">${ip}</span>`;
+        }
+
+        function formatDisplayDate(dateStr) {
+            if (!dateStr) return '';
+            let t = dateStr.replace('T', ' ').substring(0, 19);
+            if (isMobileDevice) {
+                const d = new Date(t.replace(' ', 'T') + 'Z'); // Add Z or rely on local. Backend is probably local? Let's just use local JS Date
+                const localD = new Date(t.replace(' ', 'T'));
+                if (!isNaN(localD)) {
+                    const now = new Date();
+                    const diffMs = now - localD;
+                    if (diffMs >= 0 && diffMs < 24 * 60 * 60 * 1000) {
+                        return localD.toTimeString().substring(0, 5);
+                    } else {
+                        const m = String(localD.getMonth() + 1).padStart(2, '0');
+                        const day = String(localD.getDate()).padStart(2, '0');
+                        return `${localD.getFullYear()}-${m}-${day}`;
+                    }
+                }
+            }
+            return t;
         }
 
         async function initVisitorIP() {
@@ -600,7 +761,8 @@
                         
                         globalPosts.forEach((post, index) => {
                             const level = post.level || 'INFO';
-                            const timeStr = post.created_at || new Date().toISOString().replace('T', ' ').substring(0, 19);
+                            const timeStr = post.created_at || new Date().toISOString();
+                            const displayTime = formatDisplayDate(timeStr);
                             
                             container.innerHTML += `
                                 <div class="post-card" onclick="openModal(${index})" style="animation-delay: ${index * 0.1}s">
@@ -608,7 +770,7 @@
                                         <span class="post-level level-${level}">[${level}]</span>
                                         <h2>${post.title}</h2>
                                     </div>
-                                    <div class="post-meta">#${post.ID || post.id} | TIMESTAMP: ${timeStr}</div>
+                                    <div class="post-meta">#${post.ID || post.id} | TIMESTAMP: ${displayTime}</div>
                                     <p class="truncate-text">${post.content}</p>
                                 </div>
                             `;
@@ -662,6 +824,7 @@
             currentPostId = post.ID || post.id;
             const level = post.level || 'INFO';
             const timeStr = post.created_at || '';
+            const displayTime = formatDisplayDate(timeStr);
             
             document.getElementById('modal-level').className = `post-level level-${level}`;
             document.getElementById('modal-level').textContent = `[${level}]`;
@@ -669,7 +832,7 @@
             
             // Sub-log style referencing journalctl _PID=1
             const pid = currentPostId || 1;
-            document.getElementById('modal-meta').innerHTML = `<span class="bash-prefix">${renderIPHTML(visitorIP)}@sys:~$</span> journalctl _PID=${pid} --since="${timeStr}"`;
+            document.getElementById('modal-meta').innerHTML = `<span class="bash-prefix">${renderIPHTML(visitorIP)}@sys:~$</span> journalctl _PID=${pid} --since="${displayTime}"`;
             
             const overlay = document.getElementById('read-modal');
             overlay.classList.remove('injected');
@@ -686,7 +849,7 @@
             document.getElementById('modal-level').className = `post-level level-INFO`;
             document.getElementById('modal-level').textContent = `[SYS]`;
             document.getElementById('modal-title').textContent = "Tonhie.log System Info";
-            document.getElementById('modal-meta').textContent = `TIMESTAMP: ` + new Date().toISOString().replace('T', ' ').substring(0, 19);
+            document.getElementById('modal-meta').textContent = `TIMESTAMP: ` + formatDisplayDate(new Date().toISOString());
             
             const overlay = document.getElementById('read-modal');
             overlay.classList.remove('injected');
@@ -729,8 +892,8 @@
                         list.innerHTML += `
                             <div class="comment-item">
                                 <div class="comment-meta">
-                                    [IP: ${renderIPHTML(c.ip_address)}] RATING: ${c.rating}/5
-                                    <span style="float:right;">${c.created_at}</span>
+                                    [IP: ${renderIPHTML(c.ip_address, true)}] RATING: ${c.rating}/5
+                                    <span style="float:right;">${formatDisplayDate(c.created_at)}</span>
                                 </div>
                                 <div>$ ${c.content}</div>
                             </div>
@@ -790,9 +953,30 @@
                 alert('INJECTION FAILED');
             }
         }
-
         // 初始化
         fetchPosts();
+
+        // 绑定移动端输入框折叠逻辑
+        document.addEventListener('DOMContentLoaded', () => {
+            const commentInput = document.getElementById('comment-input');
+            const modalComments = document.querySelector('.modal-comments');
+            
+            if (commentInput && modalComments) {
+                // 打开键盘或聚焦时展开
+                commentInput.addEventListener('focus', () => {
+                    if (document.body.classList.contains('mobile-mode')) {
+                        modalComments.classList.add('input-expanded');
+                    }
+                });
+
+                // 点击模态框非评论框区域时收起，且需阻止传播避免本身收起文章
+                document.querySelector('.modal-content').addEventListener('click', () => {
+                   if (document.body.classList.contains('mobile-mode')) {
+                       modalComments.classList.remove('input-expanded');
+                   }
+                });
+            }
+        });
     </script>
 </body>
 </html>
