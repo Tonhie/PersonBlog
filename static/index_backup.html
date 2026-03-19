@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tonhie.log</title>
+    <style>
+        /* =================全局参数配置================= */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --sub-text-color: #666666;
+            --line-color: #000000;
+            --max-width: 700px;
+            --font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        /* =================基础样式================= */
+        body { 
+            font-family: var(--font-main); 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            max-width: var(--max-width); 
+            margin: 50px auto; 
+            line-height: 1.7; 
+            padding: 0 20px;
+        }
+
+        /* =================标题与副标题特效================= */
+        .header-section {
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--line-color);
+            padding-bottom: 20px;
+        }
+
+        .subtitle {
+            font-family: var(--font-mono);
+            color: var(--sub-text-color);
+            font-size: 0.9em;
+            min-height: 24px; /* 防止打字时高度塌陷 */
+            display: flex;
+            align-items: center;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background-color: var(--sub-text-color);
+            margin-left: 5px;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin: 5px 0 0 0;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        /* =================文章卡片================= */
+        .post-card { 
+            border: 1px solid var(--line-color); 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            background-color: var(--bg-color);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            position: relative;
+        }
+
+        .post-card:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 4px 4px 0px var(--line-color);
+        }
+
+        .post-card h2 { margin-top: 0; font-size: 1.4em; }
+        
+        .author { 
+            font-family: var(--font-mono);
+            color: var(--sub-text-color); 
+            font-size: 0.85em; 
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* 限制行数并显示省略号 */
+        .truncate-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* 限制显示3行 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+
+        /* =================全屏阅读 Modal================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            padding: 40px;
+            overflow-y: auto;
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            box-sizing: border-box;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px 15px;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        #modal-body { white-space: pre-wrap; margin-top: 30px;}
+
+        /* =================发布表单================= */
+        .form-section {
+            border: 1px solid var(--line-color);
+            padding: 25px;
+            margin-top: 50px;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(0,0,0,0.02) 10px,
+                rgba(0,0,0,0.02) 20px
+            );
+        }
+
+        .form-section h3 { margin-top: 0; font-family: var(--font-mono); }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row input, textarea {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--line-color);
+            background: var(--bg-color);
+            font-size: 1em;
+            color: var(--text-color);
+            box-sizing: border-box;
+            outline: none;
+            transition: box-shadow 0.2s;
+            font-family: inherit;
+        }
+
+        textarea { width: 100%; resize: vertical; margin-bottom: 15px; }
+
+        input:focus, textarea:focus {
+            box-shadow: 2px 2px 0px var(--line-color);
+        }
+
+        button.submit-btn {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            border: 1px solid var(--line-color);
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.submit-btn:hover {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            box-shadow: 3px 3px 0px var(--line-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <div class="subtitle">
+            <span id="subtitle-text"></span><span class="cursor"></span>
+        </div>
+        <h1>>> Tonhie.log</h1>
+    </div>
+
+    <div id="post-container">加载中...</div>
+
+    <div class="form-section">
+        <h3>[ POST_NEW_LOG ]</h3>
+        <div class="form-row">
+            <input type="text" id="author" placeholder="Author">
+            <input type="text" id="title" placeholder="Title">
+        </div>
+        <textarea id="content" placeholder="Content details..." rows="6"></textarea>
+        <button class="submit-btn" onclick="submitPost()">EXECUTE POST</button>
+    </div>
+
+    <div class="modal-overlay" id="read-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">CLOSE</button>
+            <h1 id="modal-title"></h1>
+            <div class="author" id="modal-author"></div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let globalPosts = []; // 缓存在本地以便点击时全屏展示
+
+        /* =================副标题打字机动画逻辑================= */
+        const subtitles = [
+            'echo "${TRACE_LOG}"',
+            'echo "${RUNTIME_STDOUT}"',
+            'echo "${PULSE_SIGNAL}"',
+            'echo "${MEMORY_DUMP}"'
+        ];
+        let subIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const subElement = document.getElementById('subtitle-text');
+
+        function typeWriter() {
+            const currentText = subtitles[subIndex];
+            
+            if (isDeleting) {
+                subElement.textContent = currentText.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                subElement.textContent = currentText.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            let typeSpeed = isDeleting ? 30 : 70; // 删除比打字快
+
+            // 打印完毕，停留 3 秒
+            if (!isDeleting && charIndex === currentText.length) {
+                typeSpeed = 3000; 
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                subIndex = (subIndex + 1) % subtitles.length; // 切换下一句
+                typeSpeed = 500; // 停顿一下再打字
+            }
+
+            setTimeout(typeWriter, typeSpeed);
+        }
+        // 启动打字机
+        typeWriter();
+
+        /* =================获取与渲染文章================= */
+        async function fetchPosts() {
+            try {
+                const response = await fetch(`${API_URL}/posts`);
+                const result = await response.json();
+                
+                const container = document.getElementById('post-container');
+                container.innerHTML = ''; 
+                globalPosts = result.data.reverse(); // 倒序让新文章在前面
+
+                globalPosts.forEach((post, index) => {
+                    // 使用 onclick 触发全屏展开
+                    const postHtml = `
+                        <div class="post-card" onclick="openModal(${index})">
+                            <h2>${post.title}</h2>
+                            <div class="author">USER: ${post.author}</div>
+                            <p class="truncate-text">${post.content}</p>
+                        </div>
+                    `;
+                    container.innerHTML += postHtml;
+                });
+            } catch (error) {
+                console.error('获取文章失败:', error);
+                document.getElementById('post-container').innerText = '> ERROR: 无法连接到后端服务器_';
+            }
+        }
+
+        /* =================提交文章================= */
+        async function submitPost() {
+            const title = document.getElementById('title').value;
+            const author = document.getElementById('author').value;
+            const content = document.getElementById('content').value;
+
+            if(!title || !author || !content) {
+                alert("请填写所有字段");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/posts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ author, title, content })
+                });
+                if (response.ok) {
+                    // 清空表单
+                    document.getElementById('title').value = '';
+                    document.getElementById('author').value = '';
+                    document.getElementById('content').value = '';
+                    fetchPosts(); // 刷新列表
+                } else {
+                    const result = await response.json();
+                    alert('发布失败: ' + result.detail);
+                }
+            } catch (error) {
+                console.error('提交文章失败:', error);
+                alert('网络连接错误');
+            }
+        }
+
+        /* =================全屏Modal控制================= */
+        function openModal(index) {
+            const post = globalPosts[index];
+            document.getElementById('modal-title').textContent = post.title;
+            document.getElementById('modal-author').textContent = 'USER: ' + post.author;
+            document.getElementById('modal-body').textContent = post.content;
+            
+            document.getElementById('read-modal').classList.add('active');
+            document.body.style.overflow = 'hidden'; // 防止背景滚动
+        }
+
+        function closeModal() {
+            document.getElementById('read-modal').classList.remove('active');
+            document.body.style.overflow = 'auto'; // 恢复背景滚动
+        }
+
+        // 初始化加载
+        fetchPosts();
+    </script>
+</body>
+</html>

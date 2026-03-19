@@ -1,38 +1,11 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from random import randint
-import sqlite3
-import os
+from datetime import datetime
 
-pathDB = './blog.db'
-
-def get_db_connection():
-    exist = os.path.exists(pathDB)
-    conn = sqlite3.connect(pathDB, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    conn = get_db_connection()
-    conn.execute("""--sql
-        CREATE TABLE IF NOT EXISTS POSTS (
-            ID INTEGER PRIMARY KEY,
-            author TEXT NOT NULL,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            published INTEGER DEFAULT 1,
-            rating INTEGER
-        )
-    """)
-    cursor = conn.execute("SELECT COUNT(*) FROM POSTS")
-    if cursor.fetchone()[0] == 0:
-        origin_query = ("INSERT INTO POSTS (author, title, content) VALUES (?, ?, ?)")
-        conn.execute(origin_query, ('Tonhie', 'Origin Blog', 'Dreaming back to Origin.'))
-        conn.commit()
-    conn.close()
+from database import init_db, get_db_connection
 
 init_db()
 
@@ -46,26 +19,39 @@ app.add_middleware(
 app.mount('/static', StaticFiles(directory="static"), name="static")
 
 class PostBase(BaseModel):
-    author: str
+    author: str = "Tonhie"
     title: str
     content: str
+    level: str = "INFO"
 
 class Post(PostBase):
     id: int
     published: int = 1
-    rating: Optional[int]
+    rating: Optional[int] = None
+    created_at: Optional[str] = None
+
+class CommentBase(BaseModel):
+    content: str
+    rating: int = 5
 
 @app.get("/")
 def read_root():
     return "Hello, World!"
+
+@app.get("/api/ip")
+def get_ip(request: Request):
+    ip = request.headers.get("CF-Connecting-IP")
+    if not ip:
+        ip = request.client.host if request.client else "UNKNOWN"
+    return {"ip": ip}
 
 @app.post("/posts")
 def createpost(newPost : PostBase):
     conn = get_db_connection()
     try:
         conn.execute(
-            "INSERT INTO POSTS (author, title, content) VALUES (?, ?, ?)",
-            (newPost.author, newPost.title, newPost.content)
+            "INSERT INTO POSTS (author, title, content, level) VALUES (?, ?, ?, ?)",
+            (newPost.author, newPost.title, newPost.content, newPost.level)
         )
         conn.commit()
         return {"message" : "Post created"}
@@ -76,9 +62,20 @@ def createpost(newPost : PostBase):
 def getAllPosts():
     conn = get_db_connection()
     try:
-        cursor = conn.execute("SELECT * FROM POSTS WHERE published=1")
+        cursor = conn.execute("""
+            SELECT p.*, COALESCE(AVG(CAST(c.rating AS FLOAT)), 0) as avg_rating
+            FROM POSTS p
+            LEFT JOIN COMMENTS c ON p.ID = c.post_id
+            WHERE p.published=1
+            GROUP BY p.ID
+        """)
         rows = cursor.fetchall()
-        return {"message" : "Found all post", "data" : [dict(row) for row in rows]}
+        data = []
+        for row in rows:
+            d = dict(row)
+            d['avg_rating'] = round(d['avg_rating'], 1) if d['avg_rating'] else 0.0
+            data.append(d)
+        return {"message" : "Found all post", "data" : data}
     finally:
         conn.close()
 
@@ -117,8 +114,8 @@ def updatePost(post_id : int, newPost : PostBase):
     conn = get_db_connection()
     try:
         cursor = conn.execute(
-            "UPDATE POSTS SET author=?, title=?, content=? WHERE id=?", 
-            [newPost.author, newPost.title, newPost.content, post_id]
+            "UPDATE POSTS SET author=?, title=?, content=?, level=? WHERE id=?", 
+            [newPost.author, newPost.title, newPost.content, newPost.level, post_id]
         )
         conn.commit()
         if cursor.rowcount == 0:
@@ -127,5 +124,30 @@ def updatePost(post_id : int, newPost : PostBase):
                 detail="Post not found"
             )
         return {"message" : "Post Updated"}
+    finally:
+        conn.close()
+@app.post("/posts/{post_id}/comments")
+def add_comment(post_id: int, comment: CommentBase, request: Request):
+    conn = get_db_connection()
+    try:
+        ip = request.headers.get("CF-Connecting-IP")
+        if not ip:
+            ip = request.client.host if request.client else "UNKNOWN"
+        conn.execute(
+            "INSERT INTO COMMENTS (post_id, content, ip_address, rating) VALUES (?, ?, ?, ?)",
+            (post_id, comment.content, ip, comment.rating)
+        )
+        conn.commit()
+        return {"message": "Comment injected"}
+    finally:
+        conn.close()
+
+@app.get("/posts/{post_id}/comments")
+def get_comments(post_id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute("SELECT * FROM COMMENTS WHERE post_id=? ORDER BY created_at ASC", [post_id])
+        rows = cursor.fetchall()
+        return {"message": "Found comments", "data": [dict(row) for row in rows]}
     finally:
         conn.close()

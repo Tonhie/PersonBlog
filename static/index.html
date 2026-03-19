@@ -2,133 +2,797 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>Tonhie's Blog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tonhie.log</title>
+    <!-- Markdown & Formula & Code highlight -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked-katex-extension/lib/index.umd.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 700px; margin: 40px auto; line-height: 1.6; }
-        .post-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 12px; }
-        .author { color: #666; font-size: 0.9em; }
-        /* 让表单容器与文章卡片风格一致 */
-        .form-section {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 30px;
+        /* =================全局参数配置================= */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --sub-text-color: #666666;
+            --line-color: #000000;
+            --max-width: 700px;
+            --font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'SimSun', sans-serif;
+            --font-mono: 'Courier New', Courier, 'SimSun', monospace;
+            
+            /* 日志等级颜色 (低饱和度) */
+            --color-info: #2e7d32; /* green */
+            --color-warn: #c49000; /* yellow */
+            --color-error: #c62828; /* red */
         }
 
-        /* 使输入行内的两个输入框并排且等宽 */
-        .form-row {
+        /* 极简终端风格 */
+        body { 
+            font-family: var(--font-main); 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            max-width: var(--max-width); 
+            margin: 50px auto; 
+            line-height: 1.7; 
+            padding: 0 20px;
+            overflow-x: hidden;
+        }
+
+        /* =================标题特效================= */
+        .header-section {
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--line-color);
+            padding-bottom: 20px;
+        }
+        .subtitle {
+            font-family: var(--font-mono);
+            color: var(--sub-text-color);
+            font-size: 0.9em;
+            min-height: 24px;
             display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
+            align-items: center;
         }
 
-        .form-row input {
-            flex: 1;  /* 两个输入框各占一半宽度 */
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1em;
-            box-sizing: border-box;
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background-color: var(--sub-text-color);
+            margin-left: 5px;
+            animation: blink 1s step-end infinite;
         }
 
-        /* 单独设置文本域样式 */
-        #content {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1em;
-            font-family: inherit;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-            resize: vertical; /* 允许垂直调整大小 */
-        }
-
-        /* 提交按钮样式 */
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 1em;
+        h1 {
+            font-size: 2.5em;
+            margin: 5px 0 0 0;
+            font-weight: 800;
+            letter-spacing: -1px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: transform 0.1s, text-shadow 0.1s;
+            display: inline-block; /* 1. 只悬浮在字上 */
+        }
+        h1:hover {
+            transform: translateY(-2px);
+            text-shadow: 2px 2px 0px var(--sub-text-color);
+        }
+        h1:active {
+            transform: translateY(0);
         }
 
-        button:hover {
-            background-color: #0056b3;
+        /* =================动态打字占位================= */
+        .loading-text {
+            font-family: var(--font-mono);
+            font-weight: bold;
         }
+
+        /* =================CMD 特效================= */
+        .journal-cmd-line {
+            font-family: var(--font-mono);
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 50px;
+            overflow: hidden;
+        }
+        .journal-cmd-line.executed {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+            margin-bottom: 0;
+        }
+        .bash-prefix {
+            font-family: var(--font-mono);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        /* ===== IP 展开特效 ===== */
+        .ip-box.tr { cursor: pointer; transition: color 0.2s; border-bottom: 1px dashed transparent; }
+        .ip-box.tr:hover { border-bottom: 1px dashed var(--sub-text-color); }
+        .ip-part { display: inline-block; vertical-align: bottom; }
+        .ip-part.hidden-mid {
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        }
+        .ip-part.dots {
+            max-width: 20px;
+            overflow: hidden;
+            transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+        }
+        .ip-box.expanded .hidden-mid { max-width: 300px; opacity: 1; }
+        .ip-box.expanded .dots { max-width: 0; opacity: 0; }
+
+        .journal-cmd-text {
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            width: 0;
+            transition: width 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        
+        .modal-divider {
+            border-bottom: 1px dashed var(--line-color);
+            margin: 15px 0 25px 0;
+            opacity: 0.2;
+        }
+
+        /* =================文章卡片================= */
+        .post-card { 
+            border: 1px solid var(--line-color); 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            background-color: var(--bg-color);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUpFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .post-card:hover { /* 2. 卡片和按钮通用高级悬浮 */
+            transform: translate(-3px, -3px);
+            box-shadow: 4px 4px 0px var(--line-color);
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .post-level {
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 2px 6px;
+            border: 1px solid currentColor;
+        }
+        .level-INFO { color: var(--color-info); }
+        .level-WARN { color: var(--color-warn); }
+        .level-ERROR { 
+            color: var(--color-error); 
+            animation: error-pulse 1.5s infinite;
+        }
+
+        @keyframes error-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.4); }
+            70% { box-shadow: 0 0 0 5px rgba(198, 40, 40, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
+        }
+
+        .post-card h2 { margin: 0; font-size: 1.4em; }
+        
+        .post-meta { 
+            font-family: var(--font-mono);
+            color: var(--sub-text-color); 
+            font-size: 0.85em; 
+            margin-bottom: 10px;
+        }
+
+        .truncate-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+
+        /* =================模态窗口 (全屏阅读层) ================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 模态内容区 */
+        .modal-wrapper {
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            transition: max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 阅读主面板 */
+        .modal-content {
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            position: relative;
+            box-sizing: border-box;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), flex 0.4s;
+            transform: scale(0.95) translateY(20px);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        
+        /* 注入面板开启后，窗口变宽 */
+        .modal-overlay.active.injected .modal-wrapper {
+            max-width: 1200px;
+        }
+
+        /* 评论区 (INJECT) */
+        .modal-comments {
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            border-left: none;
+            width: 0;
+            overflow: hidden;
+            padding: 0;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95) translateY(20px);
+        }
+        .modal-overlay.active.injected .modal-comments {
+            width: 450px;
+            padding: 40px 20px;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        /* 模态控制按钮 */
+        .modal-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button.t-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            font-size: 1em;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            padding: 5px 15px;
+            transition: all 0.2s ease-in-out;
+            font-weight: bold;
+        }
+        button.t-btn:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 4px 4px 0px var(--line-color);
+        }
+        button.t-btn:active {
+            transform: translate(0px, 0px);
+            box-shadow: 0px 0px 0px var(--line-color);
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        #modal-body { 
+            white-space: pre-wrap; 
+            margin-top: 30px;
+            font-family: var(--font-main);
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* 评论区样式 */
+        .comments-header {
+            font-family: var(--font-mono);
+            font-weight: bold;
+            border-bottom: 2px solid var(--line-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .comment-display {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            font-family: var(--font-mono);
+            font-size: 0.85em; /* 稍微缩小一点日志尺寸 */
+            color: var(--sub-text-color);
+        }
+        .comment-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+        }
+        .comment-meta {
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        /* 打分组件 */
+        .rating-wrapper {
+            font-family: var(--font-mono);
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+        .rating-wrapper .r-cell {
+            cursor: pointer;
+            display: inline-block;
+            width: 15px;
+            text-align: center;
+            user-select: none;
+            transition: color 0.1s;
+        }
+        .rating-wrapper .r-cell:hover {
+            color: var(--sub-text-color);
+        }
+
+        /* 修复后的对齐光标及输入区 */
+        .terminal-input-wrapper {
+            position: relative;
+        }
+        /* 原生输入框，用于接收键盘输入，但为了与overlay彻底对齐，需使得文字完全隐形但维持宽高占位 */
+        #comment-input {
+            width: 100%;
+            height: 100px;
+            border: 1px solid var(--line-color);
+            background: var(--bg-color);
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            caret-color: transparent; 
+            color: transparent; /* 完全隐藏原生文字，防止出现叠加错位 */
+        }
+        #comment-input:focus {
+            box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1);
+        }
+        /* 覆盖层负责显示文字和方块光标，保持内边距和字体与 textarea 绝对一致 */
+        .terminal-input-overlay {
+            position: absolute;
+            top: 1px; left: 1px; right: 1px; bottom: 1px; /* 留出border位置 */
+            padding: 10px; /* 必须跟textarea一致 */
+            box-sizing: border-box;
+            pointer-events: none;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+        .terminal-input-overlay span.cursor-block {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background-color: var(--line-color);
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+        .submit-comment-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+        }
+
+        /* ===============Markdown================ */
+        .markdown-body { font-family: var(--font-main); line-height: 1.7; font-size: 1.05em; }
+        .markdown-body code { font-family: var(--font-mono); background: rgba(0,0,0,0.05); padding: 2px 4px; border: 1px solid var(--line-color); }
+        .markdown-body pre { background: var(--text-color) !important; color: var(--bg-color) !important; padding: 15px; border: 1px solid var(--line-color); overflow-x: auto; border-radius: 2px; }
+        .markdown-body pre code { background: transparent; border: none; padding: 0; color: inherit; }
+        .markdown-body blockquote { margin: 0 0 10px 0; padding-left: 15px; border-left: 4px solid var(--line-color); color: var(--sub-text-color); font-family: var(--font-mono); }
+        .markdown-body a { color: var(--text-color); font-weight: bold; text-decoration: underline; }
+        .markdown-body img { max-width: 100%; border: 1px solid var(--line-color); display: block; margin: 10px 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-family: var(--font-mono); border-bottom: 2px dashed var(--line-color); padding-bottom: 5px; margin-top: 30px; letter-spacing: -0.5px;}
+        .markdown-body p { margin-bottom: 1em; }
     </style>
-    
 </head>
 <body>
-    <h1>Tonhie's Blog</h1>
-    <div id="post-container">加载中...</div>
+
+    <div class="header-section">
+        <div class="subtitle">
+            <span id="subtitle-text"></span><span class="cursor" style="height:12px;"></span>
+        </div>
+        <h1 onclick="openSiteInfo()">>> Tonhie.log</h1>
+    </div>
+
+    <div id="cmd-container">
+        <div class="journal-cmd-line" id="cmd-line-wrapper">
+            <span class="bash-prefix" id="main-bash-prefix"></span>
+            <span class="journal-cmd-text" id="journal-cmd"></span>
+        </div>
+    </div>
+    <div id="post-container"></div>
+
+    <!-- 阅读与评论 Modal -->
+    <div class="modal-overlay" id="read-modal">
+        <div class="modal-wrapper">
+            <div class="modal-content">
+                <div class="modal-controls">
+                    <button class="t-btn" id="inject-btn" onclick="toggleInject()">[ INJECT ]</button>
+                    <button class="t-btn" onclick="closeModal()">[ FLUSH ]</button>
+                </div>
+                <div class="post-header" id="modal-header-box">
+                    <span class="post-level" id="modal-level"></span>
+                    <h1 id="modal-title" style="font-size: 2em; margin-bottom: 0; cursor: default;"></h1>
+                </div>
+                <div class="post-meta" id="modal-meta"></div>
+                <div class="modal-divider"></div>
+                <div id="modal-body"></div>
+            </div>
+
+            <div class="modal-comments" id="modal-comments-sec">
+                <div class="comments-header">> SYSLOG / Subprocess Injections</div>
+                <div class="comment-display" id="comment-list">
+                    > No injections detected.
+                </div>
+                <!-- 打分组件 -->
+                <div class="rating-wrapper">
+                    <span>> SET_RATING: [</span>
+                    <span id="rate-stars">
+                        <span class="r-cell" onclick="setRating(1)" style="padding: 0 4px;">■</span>
+                        <span class="r-cell" onclick="setRating(2)" style="padding: 0 4px;">■</span>
+                        <span class="r-cell" onclick="setRating(3)" style="padding: 0 4px;">■</span>
+                        <span class="r-cell" onclick="setRating(4)" style="padding: 0 4px;">■</span>
+                        <span class="r-cell" onclick="setRating(5)" style="padding: 0 4px;">■</span>
+                    </span>
+                    <span>] <span id="rate-text">5</span>/5</span>
+                </div>
+                
+                <div class="comment-input-area terminal-input-wrapper">
+                    <!-- Textarea for actual input -->
+                    <textarea id="comment-input" oninput="updateCursorOverlay()"></textarea>
+                    <div class="terminal-input-overlay" id="input-overlay"><span class="cursor-block"></span></div>
+                </div>
+                <button class="t-btn submit-comment-btn" onclick="submitComment()">EXECUTE INJECTION</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = window.location.origin;
-        // 当页面加载完成时执行
-        async function fetchPosts() {
+        let globalPosts = [];
+        let typingInterval = null;
+        let currentPostId = null;
+        let currentRating = 5;
+
+        /* =================加载打字机效果================= */
+        function playLoadingAnim(elementId, textOptions, loop=false) {
+            const el = document.getElementById(elementId);
+            let idx = 0;
+            let currentStr = "";
+            let targetStr = textOptions[0];
+            
+            clearInterval(typingInterval);
+            typingInterval = setInterval(() => {
+                if(currentStr.length < targetStr.length) {
+                    currentStr = targetStr.substring(0, currentStr.length + 1);
+                    el.textContent = currentStr;
+                } else if(loop) {
+                    currentStr = "";
+                } else {
+                    clearInterval(typingInterval);
+                }
+            }, 50);
+        }
+
+        /* =================副标题打字机================= */
+        const subtitles = ['echo "${TRACE_LOG}"', 'echo "${RUNTIME_STDOUT}"', 'echo "${PULSE_SIGNAL}"', 'echo "${MEMORY_DUMP}"'];
+        let subIndex = 0; let charIndex = 0; let isDeleting = false;
+        const subElement = document.getElementById('subtitle-text');
+
+        function typeWriter() {
+            const currentText = subtitles[subIndex];
+            subElement.textContent = currentText.substring(0, isDeleting ? charIndex - 1 : charIndex + 1);
+            charIndex = isDeleting ? charIndex - 1 : charIndex + 1;
+            let typeSpeed = isDeleting ? 30 : 70;
+            if (!isDeleting && charIndex === currentText.length) { typeSpeed = 3000; isDeleting = true; }
+            else if (isDeleting && charIndex === 0) { isDeleting = false; subIndex = (subIndex + 1) % subtitles.length; typeSpeed = 500; }
+            setTimeout(typeWriter, typeSpeed);
+        }
+        typeWriter();
+
+        let visitorIP = 'guest';
+
+        function renderIPHTML(ip) {
+            if (!ip) return '<span class="ip-box">UNKNOWN</span>';
+            // IPV6 Terminal Style Truncation
+            if (ip.length > 15 && ip.includes(':')) {
+                const parts = ip.split(':').filter(Boolean);
+                if (parts.length >= 2) {
+                    const head = parts[0] + ':';
+                    const tail = ':' + parts[parts.length - 1];
+                    const mid = parts.slice(1, parts.length - 1).join(':');
+                    return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${head}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${mid}</span><span class="ip-part">${tail}</span></span>`;
+                }
+                const start = ip.substring(0, 15);
+                const end = ip.substring(15);
+                return `<span class="ip-box tr" onclick="this.classList.toggle('expanded')"><span class="ip-part">${start}</span><span class="ip-part dots">..</span><span class="ip-part hidden-mid">${end}</span></span>`;
+            }
+            return `<span class="ip-box">${ip}</span>`;
+        }
+
+        async function initVisitorIP() {
             try {
-                // 1. 调用你写的 FastAPI 接口
+                // Short timeout to not block UI if API is slow
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const res = await fetch(`${API_URL}/api/ip`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                if (data.ip) {
+                    visitorIP = data.ip;
+                }
+            } catch (e) {
+                console.warn('IP fetch failed, using guest');
+            }
+            document.getElementById('main-bash-prefix').innerHTML = `${renderIPHTML(visitorIP)}@sys:~$`;
+        }
+
+        /* =================API数据渲染================= */
+        async function fetchPosts() {
+            // Wait for IP to be fetched before starting the animation
+            await initVisitorIP();
+            
+            const cmdText = document.getElementById('journal-cmd');
+            cmdText.textContent = 'journalctl -u tonhie.log -r';
+            // measure width
+            cmdText.style.width = 'auto';
+            const targetWidth = cmdText.scrollWidth + 'px';
+            cmdText.style.width = '0px';
+            void cmdText.offsetWidth; // trigger reflow
+            cmdText.style.width = targetWidth;
+
+            try {
                 const response = await fetch(`${API_URL}/posts`);
                 const result = await response.json();
                 
-                const container = document.getElementById('post-container');
-                container.innerHTML = ''; // 清空加载提示
-
-                // 2. 遍历数据并生成 HTML
-                result.data.forEach(post => {
-                    const postHtml = `
-                        <div class="post-card">
-                            <h2>${post.title}</h2>
-                            <p class="author">Author: ${post.author}</p>
-                            <p>${post.content}</p>
-                        </div>
-                    `;
-                    container.innerHTML += postHtml;
-                });
+                // wait for cmd typing transition to finish before showing posts
+                setTimeout(() => {
+                    document.getElementById('cmd-line-wrapper').classList.add('executed');
+                    
+                    setTimeout(() => {
+                        const container = document.getElementById('post-container');
+                        container.innerHTML = ''; 
+                        globalPosts = result.data.reverse();
+                        
+                        globalPosts.forEach((post, index) => {
+                            const level = post.level || 'INFO';
+                            const timeStr = post.created_at || new Date().toISOString().replace('T', ' ').substring(0, 19);
+                            
+                            container.innerHTML += `
+                                <div class="post-card" onclick="openModal(${index})" style="animation-delay: ${index * 0.1}s">
+                                    <div class="post-header">
+                                        <span class="post-level level-${level}">[${level}]</span>
+                                        <h2>${post.title}</h2>
+                                    </div>
+                                    <div class="post-meta">#${post.ID || post.id} | TIMESTAMP: ${timeStr}</div>
+                                    <p class="truncate-text">${post.content}</p>
+                                </div>
+                            `;
+                        });
+                    }, 400); // Posts appear as the command moves up
+                }, 1000);
             } catch (error) {
-                console.error('获取文章失败:', error);
-                document.getElementById('post-container').innerText = '无法连接到后端服务器';
+                setTimeout(() => {
+                    document.getElementById('cmd-line-wrapper').classList.add('executed');
+                    setTimeout(() => {
+                        document.getElementById('post-container').innerHTML = '<div><span class="loading-text" style="color:var(--color-error)">> _FATAL: CONNECTION TIMEOUT</span></div>';
+                    }, 400);
+                }, 1000);
+            } finally {
+                clearInterval(typingInterval);
             }
         }
 
-        fetchPosts();
-    </script>
-    <div class="form-section">
-        <h3>Post New Blog</h3>
-        <div class="form-row">
-            <input type="text" id="author" placeholder="Author Name">
-            <input type="text" id="title" placeholder="Post Title">
-        </div>
-        <textarea id="content" placeholder="Post Content" rows="4"></textarea>
-        <button onclick="submitPost()">Submit Post</button>
-    </div>
-    <script>
-        async function submitPost() {
-            const title = document.getElementById('title').value;
-            const author = document.getElementById('author').value;
-            const content = document.getElementById('content').value;
-
-            try {
-                const response = await fetch(`${API_URL}/posts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ author, title, content })
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    alert('Post submitted successfully!');
-                    fetchPosts(); // 刷新文章列表
-                } else {
-                    alert('Failed to submit post: ' + result.detail);
+        /* =================内容渲染================= */
+        // Configure marked to handle Katex and Math!
+        if (window.marked && window.markedKatex) {
+            marked.use(markedKatex({ throwOnError: false }));
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(code, { language: lang }).value;
+                    }
+                    return hljs.highlightAuto(code).value;
                 }
-            } catch (error) {
-                console.error('提交文章失败:', error);
-                alert('Unable to connect to the server');
+            });
+        }
+
+        function renderPostContent(targetElement, contentText) {
+            targetElement.innerHTML = '';
+            
+            const compiledNode = document.createElement('div');
+            compiledNode.className = 'markdown-body';
+            compiledNode.style.animation = 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+            
+            if (window.marked) {
+                compiledNode.innerHTML = marked.parse(contentText);
+            } else {
+                compiledNode.innerHTML = contentText;
+            }
+            
+            targetElement.appendChild(compiledNode);
+        }
+
+        function openModal(index) {
+            const post = globalPosts[index];
+            currentPostId = post.ID || post.id;
+            const level = post.level || 'INFO';
+            const timeStr = post.created_at || '';
+            
+            document.getElementById('modal-level').className = `post-level level-${level}`;
+            document.getElementById('modal-level').textContent = `[${level}]`;
+            document.getElementById('modal-title').textContent = post.title;
+            
+            // Sub-log style referencing journalctl _PID=1
+            const pid = currentPostId || 1;
+            document.getElementById('modal-meta').innerHTML = `<span class="bash-prefix">${renderIPHTML(visitorIP)}@sys:~$</span> journalctl _PID=${pid} --since="${timeStr}"`;
+            
+            const overlay = document.getElementById('read-modal');
+            overlay.classList.remove('injected');
+            document.getElementById('inject-btn').style.display = 'block';
+            
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            renderPostContent(document.getElementById('modal-body'), post.content);
+        }
+
+        /* 网站说明 */
+        function openSiteInfo() {
+            document.getElementById('modal-level').className = `post-level level-INFO`;
+            document.getElementById('modal-level').textContent = `[SYS]`;
+            document.getElementById('modal-title').textContent = "Tonhie.log System Info";
+            document.getElementById('modal-meta').textContent = `TIMESTAMP: ` + new Date().toISOString().replace('T', ' ').substring(0, 19);
+            
+            const overlay = document.getElementById('read-modal');
+            overlay.classList.remove('injected');
+            document.getElementById('inject-btn').style.display = 'none'; 
+            
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            const infoText = "Tonhie.log - 终端风格极简博客系统\n\n- 移除所有冗余设计\n- 黑白纯净体验\n- 状态码监控驱动\n> RUNNING NORMALLY.";
+            fastTypeContent(document.getElementById('modal-body'), infoText);
+        }
+
+        function closeModal() {
+            document.getElementById('read-modal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            clearInterval(fastTypeInterval);
+            currentPostId = null;
+        }
+
+        /* =================评论注入面板与API================= */
+        async function toggleInject() {
+            const overlay = document.getElementById('read-modal');
+            overlay.classList.add('injected');
+            document.getElementById('inject-btn').style.display = 'none';
+            await loadComments();
+        }
+
+        async function loadComments() {
+            if(!currentPostId) return;
+            const list = document.getElementById('comment-list');
+            list.innerHTML = '> FETCHING SUB_PROCESS LOGS...';
+            try {
+                const response = await fetch(`${API_URL}/posts/${currentPostId}/comments`);
+                const result = await response.json();
+                list.innerHTML = '';
+                if(result.data.length === 0) {
+                    list.innerHTML = '> No injections detected.';
+                } else {
+                    result.data.forEach(c => {
+                        list.innerHTML += `
+                            <div class="comment-item">
+                                <div class="comment-meta">
+                                    [IP: ${renderIPHTML(c.ip_address)}] RATING: ${c.rating}/5
+                                    <span style="float:right;">${c.created_at}</span>
+                                </div>
+                                <div>$ ${c.content}</div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (err) {
+                list.innerHTML = '> ERROR: FETCH FAILED_';
             }
         }
+
+        /* =================打分光标================= */
+        function setRating(val) {
+            currentRating = val;
+            const cells = document.querySelectorAll('#rate-stars .r-cell');
+            cells.forEach((cell, idx) => {
+                cell.textContent = idx < val ? '■' : '□'; 
+            });
+            document.getElementById('rate-text').textContent = val;
+        }
+        setRating(5); // init default
+
+        /* =================模拟光标输入层================= */
+        function updateCursorOverlay() {
+            const input = document.getElementById('comment-input');
+            const overlay = document.getElementById('input-overlay');
+            const text = input.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            overlay.innerHTML = text + '<span class="cursor-block"></span>';
+            // Auto scroll overlay if needed
+            overlay.scrollTop = input.scrollTop;
+        }
+        // Handle scroll sync just in case
+        document.getElementById('comment-input').addEventListener('scroll', function() {
+            document.getElementById('input-overlay').scrollTop = this.scrollTop;
+        });
+        updateCursorOverlay(); // init empty
+
+        async function submitComment() {
+            if(!currentPostId) return;
+            const input = document.getElementById('comment-input');
+            const content = input.value.trim();
+            if(!content) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/posts/${currentPostId}/comments`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ content, rating: currentRating })
+                });
+                if(res.ok) {
+                    input.value = '';
+                    updateCursorOverlay();
+                    setRating(5); // reset rating
+                    await loadComments(); // reload dynamically
+                }
+            } catch(e) {
+                alert('INJECTION FAILED');
+            }
+        }
+
+        // 初始化
+        fetchPosts();
     </script>
 </body>
 </html>
