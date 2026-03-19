@@ -290,7 +290,7 @@
             transform: scale(0.95) translateY(40px);
         }
         .modal-overlay.active.injected .modal-comments {
-            width: 450px;
+            width: 480px;
             padding: 40px 20px;
             opacity: 1;
             transform: scale(1) translateY(0);
@@ -363,13 +363,47 @@
         /* 打分组件 */
         .rating-wrapper {
             font-family: var(--font-mono);
-            margin-bottom: 15px;
-            font-size: 1.1em;
+            font-size: 1.05em;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             position: relative;
             z-index: 10;
+            overflow: hidden;
+            max-height: 40px; 
+            margin-bottom: 15px;
+            opacity: 1;
+            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin 0.4s ease, opacity 0.3s ease;
         }
+        .rating-left {
+            display: flex;
+            align-items: center;
+        }
+        .desktop-submit-btn {
+            font-size: 0.85em;
+            padding: 4px 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            color: var(--text-color);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            transition: all 0.2s;
+        }
+        .desktop-submit-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+        .mobile-submit-btn {
+            display: none; /* hidden on desktop */
+            font-size: 1.25em;
+            padding: 0 15px;
+            background: var(--bg-color);
+            border: 1px solid var(--line-color);
+            color: var(--text-color);
+            cursor: pointer;
+            font-family: inherit;
+        }
+
         .rating-wrapper .r-cell {
             cursor: pointer;
             display: inline-block;
@@ -377,20 +411,40 @@
             padding: 0 4px;
             text-align: center;
             user-select: none;
-            transition: color 0.1s;
+            transition: color 0.1s, transform 0.1s;
         }
         .rating-wrapper .r-cell:hover {
             color: var(--sub-text-color);
+            transform: scale(1.2);
         }
 
-        /* 修复后的对齐光标及输入区 */
+        /* 修复后的对齐光标及输入区 (通用折叠逻辑) */
         .terminal-input-wrapper {
             position: relative;
+            display: flex;
+            align-items: stretch; /* 让按钮和输入框高度强制对齐 */
+            gap: 10px;
+            width: 100%;
         }
+
+        .input-container {
+            position: relative;
+            flex: 1;
+            display: flex; /* 内部也使用 flex 确保 input 充满 */
+        }
+
+        /* 默认隐藏评分，使用动画过渡 */
+        .modal-comments:not(.input-expanded) .rating-wrapper {
+            max-height: 0;
+            margin-bottom: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
         /* 原生输入框，用于接收键盘输入，但为了与overlay彻底对齐，需使得文字完全隐形但维持宽高占位 */
         #comment-input {
             width: 100%;
-            height: 100px;
+            height: 44px;
             border: 1px solid var(--line-color);
             background: var(--bg-color);
             padding: 10px;
@@ -402,10 +456,34 @@
             outline: none;
             caret-color: transparent; 
             color: transparent; /* 完全隐藏原生文字，防止出现叠加错位 */
+            cursor: text;
+            overflow-y: hidden; /* Hide scrollbar for exact overlay matching */
         }
+
+        /* 未展开时的输入框单行高度 */
+        .modal-comments:not(.input-expanded) #comment-input {
+            height: 44px !important;
+            min-height: 44px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* 未展开时显示明显的占位符提示 */
+        .modal-comments:not(.input-expanded) #comment-input::placeholder {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        /* 展开后隐藏占位符以显示闪烁光标和输入内容 */
+        .modal-comments.input-expanded #comment-input::placeholder {
+            color: transparent;
+        }
+
         #comment-input:focus {
             box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1);
+            cursor: text;
         }
+
         /* 覆盖层负责显示文字和方块光标，保持内边距和字体与 textarea 绝对一致 */
         .terminal-input-overlay {
             position: absolute;
@@ -420,19 +498,29 @@
             word-wrap: break-word;
             overflow: hidden;
             color: var(--text-color);
+            height: 44px;
         }
+
+        /* 未展开时的覆盖层高度一致 */
+        .modal-comments:not(.input-expanded) .terminal-input-overlay {
+            height: 44px !important;
+            white-space: nowrap;
+        }
+
+        /* 未展开时不显示光标，防止喧宾夺主 */
+        .modal-comments:not(.input-expanded) .terminal-input-overlay span.cursor-block {
+            display: none;
+        }
+
         .terminal-input-overlay span.cursor-block {
             display: inline-block;
             width: 8px;
-            height: 14px;
+            height: 1.2em; /* Ensure cursor block is aligned correctly with Chinese characters */
             background-color: var(--line-color);
             animation: blink 1s step-end infinite;
-            vertical-align: text-bottom;
-        }
-        .submit-comment-btn {
-            width: 100%;
-            margin-top: 10px;
-            padding: 10px;
+            vertical-align: middle; /* Align middle with text */
+            position: relative;
+            top: -1px; /* Slight adjustment */
         }
 
         /* ===============Markdown================ */
@@ -484,11 +572,12 @@
         }
         .mobile-mode .modal-comments {
             position: absolute;
-            bottom: 0;
             left: 0;
             width: 100%;
             max-width: 100vw;
-            height: 85vh;
+            top: 75px; /* 让高度直接顶到文章标题的上方 */
+            height: auto;
+            bottom: 0;
             border-left: none;
             border-top: 2px dashed var(--line-color);
             background: var(--bg-color);
@@ -501,35 +590,46 @@
         .mobile-mode .modal-overlay.active.injected .modal-comments {
             transform: translateY(0);
         }
-        .mobile-mode .modal-controls { position: relative; top: 0; right: 0; margin-bottom: 15px; justify-content: space-between; z-index: 10; }
+        .mobile-mode .modal-controls { 
+            position: sticky; 
+            top: 0; 
+            right: 0; 
+            margin-top: -5px;
+            padding-top: 5px;
+            padding-bottom: 10px;
+            margin-bottom: 10px; 
+            justify-content: space-between; 
+            z-index: 60; 
+            background: var(--bg-color);
+        }
 
-        /* Mobile specific comments collapse/expand */
-        .mobile-mode .rating-wrapper,
-        .mobile-mode .submit-comment-btn {
+        /* Mobile specific comments overrides */
+        .mobile-mode .desktop-submit-btn { display: none !important; }
+        .mobile-mode .modal-comments.input-expanded .mobile-submit-btn { display: flex; }
+        .mobile-mode .mobile-submit-btn {
+            display: flex; /* 默认随折叠态也可以隐藏，只需在flex布局中起作用 */
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        .mobile-mode .modal-comments:not(.input-expanded) .mobile-submit-btn {
             display: none;
         }
+
+        /* 统一输入框和按钮的基础高度和盒模型 */
+        .mobile-mode #comment-input,
+        .mobile-mode .mobile-submit-btn {
+            height: 44px;
+            box-sizing: border-box;
+            margin: 0;
+            vertical-align: middle;
+        }
+
         .mobile-mode #comment-input,
         .mobile-mode .terminal-input-overlay {
-            height: 44px;
-            min-height: 44px;
-            white-space: nowrap;
-            overflow: hidden;
             font-size: 16px; /* 阻止iOS点击输入框时自动放大 */
         }
-        .mobile-mode #comment-input::placeholder { color: transparent; }
         
-        .mobile-mode .modal-comments.input-expanded .rating-wrapper {
-            display: flex;
-        }
-        .mobile-mode .modal-comments.input-expanded .submit-comment-btn {
-            display: block;
-        }
-        .mobile-mode .modal-comments.input-expanded #comment-input,
-        .mobile-mode .modal-comments.input-expanded .terminal-input-overlay {
-            height: 100px;
-            white-space: pre-wrap;
-            overflow-y: auto;
-        }
         .mobile-mode .rating-wrapper {
             font-size: 0.95em; /* 进一步缩小整个评分栏字体以防换行 */
         }
@@ -549,7 +649,7 @@
             .modal-content { padding: 20px; border: none; flex: 1; box-sizing: border-box; }
             .modal-comments { box-sizing: border-box; width: 100%; max-width: 100%; }
             .modal-overlay.active.injected .modal-comments {
-                width: 100%; height: 50vh; border-left: none; border-top: 2px dashed var(--line-color); padding: 20px 15px; box-sizing: border-box;
+                width: 100%; /*height: 50vh;*/ border-left: none; border-top: 2px dashed var(--line-color); padding: 20px 15px; box-sizing: border-box;
             }
         }
     </style>
@@ -576,7 +676,7 @@
         <div class="modal-wrapper">
             <div class="modal-content">
                 <div class="modal-controls">
-                    <button class="t-btn" id="inject-btn" onclick="toggleInject()">[ INJECT ]</button>
+                    <button class="t-btn" id="inject-btn" onclick="toggleInject()">[ FORK ]</button>
                     <button class="t-btn" onclick="closeModal()">[ FLUSH ]</button>
                 </div>
                 <div class="post-header" id="modal-header-box">
@@ -595,23 +695,27 @@
                 </div>
                 <!-- 打分组件 -->
                 <div class="rating-wrapper">
-                    <span>> METRIC: [</span>
-                    <span id="rate-stars">
-                        <span class="r-cell" onclick="setRating(1)">■</span>
-                        <span class="r-cell" onclick="setRating(2)">■</span>
-                        <span class="r-cell" onclick="setRating(3)">■</span>
-                        <span class="r-cell" onclick="setRating(4)">■</span>
-                        <span class="r-cell" onclick="setRating(5)">■</span>
-                    </span>
-                    <span>] <span id="rate-text">5</span>/5</span>
+                    <div class="rating-left">
+                        <span>> METRIC: [</span>
+                        <span id="rate-stars">
+                            <span class="r-cell" onclick="setRating(1)">■</span>
+                            <span class="r-cell" onclick="setRating(2)">■</span>
+                            <span class="r-cell" onclick="setRating(3)">■</span>
+                            <span class="r-cell" onclick="setRating(4)">■</span>
+                            <span class="r-cell" onclick="setRating(5)">■</span>
+                        </span>
+                        <span>] <span id="rate-text">5</span>/5</span>
+                    </div>
+                    <button class="t-btn desktop-submit-btn" onclick="submitComment()">[ JOIN ]</button>
                 </div>
                 
                 <div class="comment-input-area terminal-input-wrapper">
-                    <!-- Textarea for actual input -->
-                    <textarea id="comment-input" oninput="updateCursorOverlay()"></textarea>
-                    <div class="terminal-input-overlay" id="input-overlay"><span class="cursor-block"></span></div>
+                    <div class="input-container">
+                        <textarea id="comment-input" placeholder="> [ STDIN_BUFFER EMPTY / CLICK TO INPUT ]" oninput="updateCursorOverlay()"></textarea>
+                        <div class="terminal-input-overlay" id="input-overlay"><span class="cursor-block"></span></div>
+                    </div>
+                    <button class="t-btn mobile-submit-btn" onclick="submitComment()">[ JOIN ]</button>
                 </div>
-                <button class="t-btn submit-comment-btn" onclick="submitComment()">EXECUTE INJECTION</button>
             </div>
         </div>
     </div>
@@ -922,6 +1026,34 @@
             const overlay = document.getElementById('input-overlay');
             const text = input.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
             overlay.innerHTML = text + '<span class="cursor-block"></span>';
+            
+            // Auto resize logically
+            const modalComments = document.querySelector('.modal-comments');
+            if (modalComments && modalComments.classList.contains('input-expanded')) {
+                // 暂时重置以便测出无约束时的真实高度，并且必须给一个下限，避免只有一个字母时scrollHeight小于基础高度
+                input.style.height = '44px';
+                
+                // Get the scroll height
+                let targetHeight = input.scrollHeight;
+                
+                // Set the exact height to prevent jump from 44px (default) to scrollHeight
+                if (targetHeight < 44 || input.value.length === 0) {
+                    targetHeight = 44; 
+                }
+                
+                const docHeight = document.body.clientHeight;
+                const maxHeight = docHeight * 0.618;
+                
+                let finalHeight = targetHeight;
+                if (finalHeight > maxHeight) finalHeight = maxHeight;
+                
+                input.style.height = finalHeight + 'px';
+                overlay.style.height = finalHeight + 'px';
+            } else {
+                input.style.height = '44px';
+                overlay.style.height = '44px';
+            }
+            
             // Auto scroll overlay if needed
             overlay.scrollTop = input.scrollTop;
         }
@@ -956,7 +1088,7 @@
         // 初始化
         fetchPosts();
 
-        // 绑定移动端输入框折叠逻辑
+        // 绑定输入框折叠逻辑（桌面与移动端通用）
         document.addEventListener('DOMContentLoaded', () => {
             const commentInput = document.getElementById('comment-input');
             const modalComments = document.querySelector('.modal-comments');
@@ -964,17 +1096,35 @@
             if (commentInput && modalComments) {
                 // 打开键盘或聚焦时展开
                 commentInput.addEventListener('focus', () => {
-                    if (document.body.classList.contains('mobile-mode')) {
-                        modalComments.classList.add('input-expanded');
-                    }
+                    modalComments.classList.add('input-expanded');
+                    updateCursorOverlay(); // 激发重算高度
                 });
 
                 // 点击模态框非评论框区域时收起，且需阻止传播避免本身收起文章
                 document.querySelector('.modal-content').addEventListener('click', () => {
-                   if (document.body.classList.contains('mobile-mode')) {
-                       modalComments.classList.remove('input-expanded');
-                   }
+                    modalComments.classList.remove('input-expanded');
+                    updateCursorOverlay(); // 激发恢复折叠高度
                 });
+
+                // 解决手机端键盘弹出时整体页面被顶起、遮挡或滚动的问题
+                if (window.visualViewport) {
+                    const handleResize = () => {
+                        const overlay = document.getElementById('read-modal');
+                        if (overlay && overlay.classList.contains('active') && document.body.classList.contains('mobile-mode')) {
+                            // 让整个阅读底层覆盖满真实的视口高度，并跟随视口由于系统键盘产生的偏移
+                            overlay.style.height = window.visualViewport.height + 'px';
+                            overlay.style.top = Math.max(0, window.visualViewport.offsetTop) + 'px';
+                            window.scrollTo(0, 0); // 抵消任何由浏览器默认行为造成的 Body 上移
+                        } else if (overlay) {
+                            overlay.style.height = '';
+                            overlay.style.top = '0';
+                        }
+                    };
+                    window.visualViewport.addEventListener('resize', handleResize);
+                    window.visualViewport.addEventListener('scroll', handleResize);
+                    commentInput.addEventListener('focus', () => setTimeout(handleResize, 100)); // 键盘彻底弹起时触发
+                    commentInput.addEventListener('blur', () => setTimeout(handleResize, 100));  // 键盘收起时还原
+                }
             }
         });
     </script>
