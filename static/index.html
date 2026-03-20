@@ -655,6 +655,8 @@
             height: auto;
             bottom: 0;
             border-left: none;
+            border-right: none;
+            border-bottom: none;
             border-top: 2px dashed var(--line-color);
             background: var(--bg-color);
             padding: 20px 15px;
@@ -1004,11 +1006,16 @@
             void cmdText.offsetWidth; // trigger reflow
             cmdText.style.width = targetWidth;
 
+            const animWaitTime = 1000;
+            const startTime = Date.now();
             try {
                 const response = await fetch(`${API_URL}/posts`);
                 const result = await response.json();
                 
-                // wait for cmd typing transition to finish before showing posts
+                const elapsed = Date.now() - startTime;
+                const remainingWait = Math.max(0, animWaitTime - elapsed);
+                
+                // wait for cmd typing transition to finish before showing posts, but don't wait extra if already finished
                 setTimeout(() => {
                     document.getElementById('cmd-line-wrapper').classList.add('executed');
                     
@@ -1034,8 +1041,10 @@
                             `;
                         });
                     }, 400); // Posts appear as the command moves up
-                }, 1000);
+                }, remainingWait);
             } catch (error) {
+                const elapsed = Date.now() - startTime;
+                const remainingWait = Math.max(0, 1000 - elapsed);
                 setTimeout(() => {
                     document.getElementById('cmd-line-wrapper').classList.add('executed');
                     setTimeout(() => {
@@ -1160,15 +1169,24 @@
             
             const postContent = `# Tonhie.log\n- Terminal style minimal blog system.\n- 移除所有冗余设计\n- 黑白纯净体验\n- 状态码监控驱动\n\n> RUNNING NORMALLY.`;
             renderPostContent(document.getElementById('modal-body'), postContent);
+            
+            currentSysEnv = 'THEME'; // 重置为默认第一个
         }
 
         function selectSysEnv(envName) {
             currentSysEnv = envName;
             document.querySelectorAll('.sys-env-opt').forEach(el => {
                 const isMatch = el.innerText.includes(envName);
-                el.style.color = isMatch ? 'var(--text-color)' : 'var(--sub-text-color)';
-                el.style.fontWeight = isMatch ? 'bold' : 'normal';
-                el.style.transform = isMatch ? 'scale(1.1)' : 'scale(1)';
+                if (isMatch) {
+                    el.style.color = 'var(--text-color)';
+                    el.style.fontWeight = 'bold';
+                    el.style.transform = 'scale(1.1)';
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    el.style.color = 'var(--sub-text-color)';
+                    el.style.fontWeight = 'normal';
+                    el.style.transform = 'scale(1)';
+                }
             });
 
             const inner = document.getElementById('sys-input-container-inner');
@@ -1331,10 +1349,15 @@
                 }
             }, 50);
 
+            const animWaitTime = 600;
+            const startTime = Date.now();
             try {
                 const response = await fetch(`${API_URL}/posts/${currentPostId}/comments`);
                 const result = await response.json();
                 
+                const elapsed = Date.now() - startTime;
+                const remainingWait = Math.max(0, animWaitTime - elapsed);
+
                 // Wait for typing animation to finish before showing comments
                 setTimeout(() => {
                     const loadingCmd = document.querySelector('.loading-cmd');
@@ -1387,13 +1410,15 @@
                         });
                         outContainer.innerHTML = html;
                     }
-                }, 800);
+                }, remainingWait);
 
             } catch (err) {
+                const elapsed = Date.now() - startTime;
+                const remainingWait = Math.max(0, animWaitTime - elapsed);
                 setTimeout(() => {
                     const outContainer = document.getElementById('comments-output-container');
                     if(outContainer) outContainer.innerHTML = '<div style="color:var(--color-error); opacity:0; animation: slideUpFade 0.4s forwards;">> ERROR: FETCH FAILED_</div>';
-                }, 800);
+                }, remainingWait);
             }
         }
 
@@ -1505,6 +1530,14 @@
 
         // 绑定输入框折叠逻辑（桌面与移动端通用）
         document.addEventListener('DOMContentLoaded', () => {
+            const scrollArea = document.querySelector('.sys-env-scroll-area');
+            if (scrollArea) {
+                scrollArea.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    scrollArea.scrollBy({ left: e.deltaY > 0 ? 50 : -50, behavior: 'smooth' });
+                });
+            }
+            
             const commentInput = document.getElementById('comment-input');
             const modalComments = document.querySelector('.modal-comments');
             
