@@ -791,7 +791,7 @@
                     
                     <div class="comment-input-area terminal-input-wrapper">
                         <div class="input-container">
-                            <textarea id="comment-input" placeholder="> [ STDIN_BUFFER EMPTY / CLICK TO INPUT ]" oninput="updateCursorOverlay()"></textarea>
+                            <textarea id="comment-input" placeholder="> [ INPUT STDIN ]" oninput="updateCursorOverlay()"></textarea>
                             <div class="terminal-input-overlay" id="input-overlay"><span class="cursor-block"></span></div>
                         </div>
                         <button class="t-btn mobile-submit-btn" onclick="submitComment()">[ JOIN ]</button>
@@ -878,6 +878,8 @@
         }
 
         const API_URL = window.location.origin;
+        let globalPostsPromise = fetch(`${API_URL}/posts`).then(r => r.json()).catch(() => ({ data: [] }));
+        let activePreloadPromise = null;
         let globalPosts = [];
         let typingInterval = null;
         let currentPostId = null;
@@ -1009,8 +1011,14 @@
             const animWaitTime = 1000;
             const startTime = Date.now();
             try {
-                const response = await fetch(`${API_URL}/posts`);
-                const result = await response.json();
+                let result;
+                if (globalPostsPromise) {
+                    result = await globalPostsPromise;
+                    globalPostsPromise = null;
+                } else {
+                    const response = await fetch(`${API_URL}/posts`);
+                    result = await response.json();
+                }
                 
                 const elapsed = Date.now() - startTime;
                 const remainingWait = Math.max(0, animWaitTime - elapsed);
@@ -1195,38 +1203,64 @@
             inner.style.transform = 'translateY(10px)';
             customSelectOpen = false;
             
-            setTimeout(() => {
-                if (envName === 'THEME') {
-                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                    const curVal = isDark ? 'dark' : 'light';
-                    inner.innerHTML = `
-                        <div style="position: relative; width: 100%; height: 44px; z-index: 99999; background: var(--bg-color);">
-                            <div id="sys-custom-select" style="position: relative; z-index: 60; width: 100%; height: 44px; border: 1px solid var(--line-color); background: var(--bg-color); padding: 0 10px; box-sizing: border-box; font-family: var(--font-mono); font-size: 14px; outline: none; color: var(--text-color); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;" onclick="toggleCustomOption(event)">
-                                <span id="custom-sel-display" style="pointer-events: none;">${curVal}</span>
-                                <span style="font-size: 10px; pointer-events: none;">▲</span>
-                            </div>
-                            <div id="custom-sel-opts" class="custom-select-options">
-                                <div class="custom-select-opt" onclick="selectCustomVal('light', event)">> light</div>
-                                <div class="custom-select-opt" onclick="selectCustomVal('dark', event)">> dark</div>
-                            </div>
-                            <input type="hidden" id="sys-comment-input" value="${curVal}">
+            if (envName === 'THEME') {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const curVal = isDark ? 'dark' : 'light';
+                inner.innerHTML = `
+                    <div style="position: relative; width: 100%; height: 44px; z-index: 99999; background: var(--bg-color);">
+                        <div id="sys-custom-select" style="position: relative; z-index: 60; width: 100%; height: 44px; border: 1px solid var(--line-color); background: var(--bg-color); padding: 0 10px; box-sizing: border-box; font-family: var(--font-mono); font-size: 14px; outline: none; color: var(--text-color); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;" onclick="toggleCustomOption(event)">
+                            <span id="custom-sel-display" style="pointer-events: none;">${curVal}</span>
+                            <span style="font-size: 10px; pointer-events: none;">▲</span>
                         </div>
-                    `;
-                } else {
-                    const placeholder = envName === 'SUB_PID' ? '> [ USERNAME ]' : '> [ CONTACT ]';
-                    let defaultVal = '';
-                    if (envName === 'SUB_PID') defaultVal = localStorage.getItem('tonhie_codename') || '';
-                    if (envName === 'PIPE') defaultVal = localStorage.getItem('tonhie_contact') || '';
-                    
-                    inner.innerHTML = `
-                        <input type="text" id="sys-comment-input" style="width: 100%; height: 44px; border: 1px solid var(--line-color); background: var(--bg-color); padding: 0 10px; box-sizing: border-box; font-family: var(--font-mono); font-size: 14px; outline: none; color: var(--text-color); transition: all 0.2s;" placeholder="${placeholder}" value="${defaultVal}">
-                    `;
-                    setTimeout(() => { const el = document.getElementById('sys-comment-input'); if(el) el.focus(); }, 50);
-                }
+                        <div id="custom-sel-opts" class="custom-select-options">
+                            <div class="custom-select-opt" onclick="selectCustomVal('light', event)">> light</div>
+                            <div class="custom-select-opt" onclick="selectCustomVal('dark', event)">> dark</div>
+                        </div>
+                        <input type="hidden" id="sys-comment-input" value="${curVal}">
+                    </div>
+                `;
+            } else {
+                const placeholder = envName === 'SUB_PID' ? '> [ USERNAME ]' : '> [ CONTACT ]';
+                let defaultVal = '';
+                if (envName === 'SUB_PID') defaultVal = localStorage.getItem('tonhie_codename') || '';
+                if (envName === 'PIPE') defaultVal = localStorage.getItem('tonhie_contact') || '';
                 
+                inner.innerHTML = `
+                    <input type="text" id="sys-comment-input" style="width: 100%; height: 44px; border: 1px solid var(--line-color); background: var(--bg-color); padding: 0 10px; box-sizing: border-box; font-family: var(--font-mono); font-size: 14px; outline: none; color: var(--text-color); transition: all 0.2s;" placeholder="${placeholder}" value="${defaultVal}">
+                `;
+                
+                const el = document.getElementById('sys-comment-input');
+                if (el) {
+                    // 绑定防页面上滑逻辑 (参考了评论区实现)
+                    el.addEventListener('touchstart', (e) => {
+                        if (document.activeElement !== el) {
+                            e.preventDefault();
+                            el.focus({ preventScroll: true });
+                        }
+                    }, { passive: false });
+                    
+                    if (window.visualViewport) {
+                        const handleResize = () => {
+                            const overlay = document.getElementById('read-modal');
+                            if (overlay && overlay.classList.contains('active') && document.body.classList.contains('mobile-mode')) {
+                                overlay.style.height = window.visualViewport.height + 'px';
+                                overlay.style.top = Math.max(0, window.visualViewport.offsetTop) + 'px';
+                                window.scrollTo(0, 0);
+                            } else if (overlay) {
+                                overlay.style.height = '';
+                                overlay.style.top = '0';
+                            }
+                        };
+                        el.addEventListener('focus', () => setTimeout(handleResize, 100));
+                        el.addEventListener('blur', () => requestAnimationFrame(handleResize));
+                    }
+                }
+            }
+            
+            requestAnimationFrame(() => {
                 inner.style.opacity = 1;
                 inner.style.transform = 'translateY(0)';
-            }, 200);
+            });
         }
 
         async function submitSysConfig() {
@@ -1272,6 +1306,9 @@
             if (typeof fastTypeInterval !== 'undefined') clearInterval(fastTypeInterval);
             clearInterval(sysInfoTypeInterval);
             currentPostId = null;
+            document.getElementById('comment-list').innerHTML = ''; // Clear loaded comments on close
+            
+            // Allow the overlay transition to finish before fully clearing to prevent visual glitches
         }
 
         /* =================评论注入面板与API================= */
@@ -1284,6 +1321,7 @@
 
         async function loadComments() {
             if(!currentPostId) return;
+            const requestPostId = currentPostId;
             const list = document.getElementById('comment-list');
             
             if (currentPostId === 'sys') {
@@ -1293,9 +1331,18 @@
                 // Trigger selectSysEnv manually without transition? No, just ensuring it's shown:
                 selectSysEnv(currentSysEnv);
                 
+                list.innerHTML = '<div style="opacity: 0.6; font-family: var(--font-mono);">> Fetching local environment logs...</div>';
+                
                 try {
-                    const response = await fetch(`${API_URL}/sys_logs`);
-                    const result = await response.json();
+                    let result;
+                    if (activePreloadPromise) {
+                        result = await activePreloadPromise;
+                        activePreloadPromise = null;
+                    } else {
+                        const response = await fetch(`${API_URL}/sys_logs`);
+                        result = await response.json();
+                    }
+                    if (requestPostId !== currentPostId) return;
                     let logsHTML = '';
                     const myLogs = result.data || [];
                     
@@ -1352,14 +1399,21 @@
             const animWaitTime = 600;
             const startTime = Date.now();
             try {
-                const response = await fetch(`${API_URL}/posts/${currentPostId}/comments`);
-                const result = await response.json();
+                let result;
+                if (activePreloadPromise) {
+                    result = await activePreloadPromise;
+                    activePreloadPromise = null;
+                } else {
+                    const response = await fetch(`${API_URL}/posts/${currentPostId}/comments`);
+                    result = await response.json();
+                }
                 
                 const elapsed = Date.now() - startTime;
                 const remainingWait = Math.max(0, animWaitTime - elapsed);
 
                 // Wait for typing animation to finish before showing comments
                 setTimeout(() => {
+                    if (requestPostId !== currentPostId) return;
                     const loadingCmd = document.querySelector('.loading-cmd');
                     if (loadingCmd) {
                         loadingCmd.style.transition = 'all 0.4s ease';
@@ -1416,6 +1470,7 @@
                 const elapsed = Date.now() - startTime;
                 const remainingWait = Math.max(0, animWaitTime - elapsed);
                 setTimeout(() => {
+                    if (requestPostId !== currentPostId) return;
                     const outContainer = document.getElementById('comments-output-container');
                     if(outContainer) outContainer.innerHTML = '<div style="color:var(--color-error); opacity:0; animation: slideUpFade 0.4s forwards;">> ERROR: FETCH FAILED_</div>';
                 }, remainingWait);
@@ -1532,9 +1587,26 @@
         document.addEventListener('DOMContentLoaded', () => {
             const scrollArea = document.querySelector('.sys-env-scroll-area');
             if (scrollArea) {
+                let bounceTimeout;
                 scrollArea.addEventListener('wheel', (e) => {
                     e.preventDefault();
-                    scrollArea.scrollBy({ left: e.deltaY > 0 ? 50 : -50, behavior: 'smooth' });
+                    const delta = e.deltaY > 0 ? 50 : -50;
+                    scrollArea.scrollBy({ left: delta, behavior: 'smooth' });
+                    
+                    // 单次弹跳效果
+                    clearTimeout(bounceTimeout);
+                    bounceTimeout = setTimeout(() => {
+                        const isAtLeft = scrollArea.scrollLeft === 0;
+                        const isAtRight = Math.ceil(scrollArea.scrollLeft + scrollArea.clientWidth) >= scrollArea.scrollWidth;
+                        
+                        if (isAtLeft && delta < 0) {
+                            scrollArea.style.transform = 'translateX(15px)';
+                            setTimeout(() => { scrollArea.style.transform = 'translateX(0)'; }, 300);
+                        } else if (isAtRight && delta > 0) {
+                            scrollArea.style.transform = 'translateX(-15px)';
+                            setTimeout(() => { scrollArea.style.transform = 'translateX(0)'; }, 300);
+                        }
+                    }, 50); // 防抖检测结束
                 });
             }
             
@@ -1579,7 +1651,7 @@
                     window.visualViewport.addEventListener('resize', handleResize);
                     window.visualViewport.addEventListener('scroll', handleResize);
                     commentInput.addEventListener('focus', () => setTimeout(handleResize, 100)); // 键盘彻底弹起时触发
-                    commentInput.addEventListener('blur', () => setTimeout(handleResize, 100));  // 键盘收起时还原
+                    commentInput.addEventListener('blur', () => requestAnimationFrame(handleResize));  // 键盘收起时立刻还原
                 }
             }
         });
