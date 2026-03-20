@@ -44,6 +44,16 @@ def init_db():
         )
     ''')
 
+    conn.execute('''--sql
+        CREATE TABLE IF NOT EXISTS SYS_LOGS (
+            id INTEGER PRIMARY KEY,
+            ip_address TEXT,
+            env_key TEXT NOT NULL,
+            env_val TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+        )
+    ''')
+
     cursor = conn.execute("SELECT COUNT(*) FROM POSTS")
     if cursor.fetchone()[0] == 0:
         origin_query = ("INSERT INTO POSTS (author, title, content, level) VALUES (?, ?, ?, ?)")                                                                                  

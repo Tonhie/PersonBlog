@@ -34,6 +34,10 @@ class CommentBase(BaseModel):
     content: str
     rating: int = 5
 
+class SysLogBase(BaseModel):
+    env_key: str
+    env_val: str
+
 @app.get("/")
 def read_root():
     return "Hello, World!"
@@ -149,5 +153,34 @@ def get_comments(post_id: int):
         cursor = conn.execute("SELECT * FROM COMMENTS WHERE post_id=? ORDER BY created_at ASC", [post_id])
         rows = cursor.fetchall()
         return {"message": "Found comments", "data": [dict(row) for row in rows]}
+    finally:
+        conn.close()
+
+@app.post("/sys_logs")
+def add_sys_log(log: SysLogBase, request: Request):
+    conn = get_db_connection()
+    try:
+        ip = request.headers.get("CF-Connecting-IP")
+        if not ip:
+            ip = request.client.host if request.client else "UNKNOWN"
+        conn.execute(
+            "INSERT INTO SYS_LOGS (ip_address, env_key, env_val) VALUES (?, ?, ?)",
+            (ip, log.env_key, log.env_val)
+        )
+        conn.commit()
+        return {"message": "Syslog injected"}
+    finally:
+        conn.close()
+
+@app.get("/sys_logs")
+def get_sys_logs(request: Request):
+    conn = get_db_connection()
+    try:
+        ip = request.headers.get("CF-Connecting-IP")
+        if not ip:
+            ip = request.client.host if request.client else "UNKNOWN"
+        cursor = conn.execute("SELECT * FROM SYS_LOGS WHERE ip_address=? ORDER BY created_at ASC", [ip])
+        rows = cursor.fetchall()
+        return {"message": "Found sys logs", "data": [dict(row) for row in rows]}
     finally:
         conn.close()

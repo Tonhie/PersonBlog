@@ -765,88 +765,32 @@
             </div>
 
             <div class="modal-comments" id="modal-comments-sec">
-                <div class="comments-header" id="comments-header">> SYSLOG / Subprocess Injections</div>
+                <div class="comments-header">> SYSLOG / Subprocess Injections</div>
                 <div class="comment-display" id="comment-list">
                     > No injections detected.
                 </div>
-                
-                <div id="comment-input-section">
-                    <!-- 打分组件 -->
-                    <div class="rating-wrapper">
-                        <div class="rating-left">
-                            <span>> METRIC: [</span>
-                            <span id="rate-stars">
-                                <span class="r-cell" onclick="setRating(1)">■</span>
-                                <span class="r-cell" onclick="setRating(2)">■</span>
-                                <span class="r-cell" onclick="setRating(3)">■</span>
-                                <span class="r-cell" onclick="setRating(4)">■</span>
-                                <span class="r-cell" onclick="setRating(5)">■</span>
-                            </span>
-                            <span>] <span id="rate-text">5</span>/5</span>
-                        </div>
-                        <button class="t-btn desktop-submit-btn" onclick="submitComment()">[ JOIN ]</button>
+                <!-- 打分组件 -->
+                <div class="rating-wrapper">
+                    <div class="rating-left">
+                        <span>> METRIC: [</span>
+                        <span id="rate-stars">
+                            <span class="r-cell" onclick="setRating(1)">■</span>
+                            <span class="r-cell" onclick="setRating(2)">■</span>
+                            <span class="r-cell" onclick="setRating(3)">■</span>
+                            <span class="r-cell" onclick="setRating(4)">■</span>
+                            <span class="r-cell" onclick="setRating(5)">■</span>
+                        </span>
+                        <span>] <span id="rate-text">5</span>/5</span>
                     </div>
-                    
-                    <div class="comment-input-area terminal-input-wrapper">
-                        <div class="input-container">
-                            <textarea id="comment-input" placeholder="> [ STDIN_BUFFER EMPTY / CLICK TO INPUT ]" oninput="updateCursorOverlay()"></textarea>
-                            <div class="terminal-input-overlay" id="input-overlay"><span class="cursor-block"></span></div>
-                        </div>
-                        <button class="t-btn mobile-submit-btn" onclick="submitComment()">[ JOIN ]</button>
-                    </div>
+                    <button class="t-btn desktop-submit-btn" onclick="submitComment()">[ JOIN ]</button>
                 </div>
-
-                <!-- Sys config 用 -->
-                <style>
-                    .sys-always-show { opacity: 1 !important; max-height: 40px !important; margin-bottom: 15px !important; pointer-events: auto !important; overflow: visible !important; }
-                    .sys-mobile-btn { display: none; font-size: 1.25em; padding: 0 15px; background: var(--bg-color); border: 1px solid var(--line-color); color: var(--text-color); cursor: pointer; height: 44px; box-sizing: border-box; }
-                    .mobile-mode .sys-mobile-btn { display: flex; align-items: center; justify-content: center; }
-                    .mobile-mode .sys-desktop-btn { display: none !important; }
-                    .sys-env-scroll-area { 
-                        display: flex; align-items: center; overflow-x: auto; gap: 8px; 
-                        scrollbar-width: none; -ms-overflow-style: none; transition: transform 0.3s; flex: 1; margin: 0 4px;
-                        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3.33%, black 96.67%, transparent 100%);
-                        mask-image: linear-gradient(to right, transparent 0%, black 3.33%, black 96.67%, transparent 100%);
-                    }
-                    .sys-env-scroll-area::-webkit-scrollbar { display: none; }
-                    .custom-select-options {
-                        position: absolute; left: 0; bottom: calc(100% - 1px); width: 100%; box-sizing: border-box;
-                        background: var(--bg-color) !important; border: 1px solid var(--line-color);
-                        border-bottom: none; 
-                        transform: translateY(20px); opacity: 0; visibility: hidden;
-                        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, visibility 0.3s;
-                        z-index: 99999; box-shadow: 0 -10px 20px var(--shadow-color);
-                        display: block; /* ensure block explicitly */
-                    }
-                    .custom-select-options.open { transform: translateY(0); opacity: 1; visibility: visible; }
-                    .custom-select-opt { 
-                        padding: 10px; cursor: pointer; border-bottom: 1px dashed var(--line-color); 
-                        font-family: var(--font-mono); font-size: 14px; transition: all 0.2s; 
-                        color: var(--text-color); background: var(--bg-color); z-index: 10000; position: relative;
-                        display: block; width: 100%; box-sizing: border-box; /* fill the whole space */
-                    }
-                    .custom-select-opt:hover { background: var(--text-color); color: var(--bg-color); padding-left: 15px; }
-                </style>
-                <div id="sys-input-section" style="display: none; flex-direction: column;">
-                    <div class="rating-wrapper sys-always-show" style="display: flex; gap: 10px; overflow: hidden; max-height: 40px;">
-                        <div class="rating-left" style="display: flex; align-items: center; white-space: nowrap; flex: 1; min-width: 0; overflow: hidden;">
-                            <span>> TARGET: [ </span>
-                            <div class="sys-env-scroll-area" style="flex: 1; display: flex; overflow-x: auto; gap: 15px; padding: 0 5px; scrollbar-width: none; -ms-overflow-style: none;">
-                                <span class="sys-env-opt r-cell" onclick="selectSysEnv('THEME')" style="width:auto; cursor: pointer; font-weight: bold; color: var(--text-color); min-width: max-content; transition: all 0.3s; padding: 0;">${THEME}</span>
-                                <span class="sys-env-opt r-cell" onclick="selectSysEnv('SUB_PID')" style="width:auto; cursor: pointer; color: var(--sub-text-color); min-width: max-content; transition: all 0.3s; padding: 0;">${SUB_PID}</span>
-                                <span class="sys-env-opt r-cell" onclick="selectSysEnv('PIPE')" style="width:auto; cursor: pointer; color: var(--sub-text-color); min-width: max-content; transition: all 0.3s; padding: 0;">${PIPE}</span>
-                            </div>
-                            <span> ]</span>
-                        </div>
-                        <button class="t-btn desktop-submit-btn sys-desktop-btn" onclick="submitSysConfig()" style="flex-shrink: 0; margin-left: auto;">[ SET ]</button>
+                
+                <div class="comment-input-area terminal-input-wrapper">
+                    <div class="input-container">
+                        <textarea id="comment-input" placeholder="> [ STDIN_BUFFER EMPTY / CLICK TO INPUT ]" oninput="updateCursorOverlay()"></textarea>
+                        <div class="terminal-input-overlay" id="input-overlay"><span class="cursor-block"></span></div>
                     </div>
-                    
-                    <div class="comment-input-area terminal-input-wrapper sys-always-show" style="max-height: none !important; transition: all 0.3s ease; position: relative; z-index: 99999;">
-                        <div class="input-container" id="sys-input-container-inner" style="flex:1; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
-                            <!-- auto filled by JS -->
-                        </div>
-                        <button class="t-btn sys-mobile-btn" onclick="submitSysConfig()">[ SET ]</button>
-                    </div>
+                    <button class="t-btn mobile-submit-btn" onclick="submitComment()">[ JOIN ]</button>
                 </div>
             </div>
         </div>
@@ -1094,7 +1038,6 @@
             
             const overlay = document.getElementById('read-modal');
             overlay.classList.remove('injected');
-            document.getElementById('inject-btn').textContent = '[ FORK ]';
             document.getElementById('inject-btn').style.display = 'block';
             
             overlay.classList.add('active');
@@ -1104,46 +1047,9 @@
         }
 
         let sysInfoTypeInterval = null;
-        let customSelectOpen = false;
-
-        function toggleCustomOption(e) {
-            if(e) e.stopPropagation();
-            customSelectOpen = !customSelectOpen;
-            const opts = document.getElementById('custom-sel-opts');
-            const selectContainer = document.getElementById('sys-custom-select');
-            if (opts) {
-                if (customSelectOpen) {
-                    opts.classList.add('open');
-                    if(selectContainer) selectContainer.style.background = 'var(--code-bg)';
-                } else {
-                    opts.classList.remove('open');
-                    if(selectContainer) selectContainer.style.background = 'var(--bg-color)';
-                }
-            }
-        }
-
-        function selectCustomVal(val, e) {
-            if(e) e.stopPropagation();
-            document.getElementById('sys-comment-input').value = val;
-            document.getElementById('custom-sel-display').innerText = val;
-            toggleCustomOption();
-        }
-
-        document.addEventListener('click', (e) => {
-            if(customSelectOpen && !e.target.closest('.custom-select-options') && !e.target.closest('#sys-custom-select')) {
-                customSelectOpen = false;
-                const opts = document.getElementById('custom-sel-opts');
-                const selectContainer = document.getElementById('sys-custom-select');
-                if(opts) opts.classList.remove('open');
-                if(selectContainer) selectContainer.style.background = 'var(--bg-color)';
-            }
-        });
 
         /* 网站说明 */
-        let currentSysEnv = 'THEME';
-
         function openSiteInfo() {
-            currentPostId = 'sys';
             document.getElementById('modal-level').className = `post-level level-INFO`;
             document.getElementById('modal-level').textContent = `[SYS]`;
             document.getElementById('modal-title').textContent = "Tonhie.log System Info";
@@ -1151,101 +1057,78 @@
             
             const overlay = document.getElementById('read-modal');
             overlay.classList.remove('injected');
-            const injectBtn = document.getElementById('inject-btn');
-            injectBtn.textContent = '[ CONFIG ]';
-            injectBtn.style.display = 'block'; 
+            document.getElementById('inject-btn').style.display = 'none'; 
             
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
             
-            const postContent = `# Tonhie.log\n- Terminal style minimal blog system.\n- 移除所有冗余设计\n- 黑白纯净体验\n- 状态码监控驱动\n\n> RUNNING NORMALLY.`;
-            renderPostContent(document.getElementById('modal-body'), postContent);
-        }
-
-        function selectSysEnv(envName) {
-            currentSysEnv = envName;
-            document.querySelectorAll('.sys-env-opt').forEach(el => {
-                const isMatch = el.innerText.includes(envName);
-                el.style.color = isMatch ? 'var(--text-color)' : 'var(--sub-text-color)';
-                el.style.fontWeight = isMatch ? 'bold' : 'normal';
-                el.style.transform = isMatch ? 'scale(1.1)' : 'scale(1)';
-            });
-
-            const inner = document.getElementById('sys-input-container-inner');
-            
-            inner.style.opacity = 0;
-            inner.style.transform = 'translateY(10px)';
-            customSelectOpen = false;
-            
-            setTimeout(() => {
-                if (envName === 'THEME') {
-                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                    const curVal = isDark ? 'dark' : 'light';
-                    inner.innerHTML = `
-                        <div style="position: relative; width: 100%; height: 44px; z-index: 99999; background: var(--bg-color);">
-                            <div id="sys-custom-select" style="position: relative; z-index: 60; width: 100%; height: 44px; border: 1px solid var(--line-color); background: var(--bg-color); padding: 0 10px; box-sizing: border-box; font-family: var(--font-mono); font-size: 14px; outline: none; color: var(--text-color); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;" onclick="toggleCustomOption(event)">
-                                <span id="custom-sel-display" style="pointer-events: none;">${curVal}</span>
-                                <span style="font-size: 10px; pointer-events: none;">▲</span>
-                            </div>
-                            <div id="custom-sel-opts" class="custom-select-options">
-                                <div class="custom-select-opt" onclick="selectCustomVal('light', event)">> light</div>
-                                <div class="custom-select-opt" onclick="selectCustomVal('dark', event)">> dark</div>
-                            </div>
-                            <input type="hidden" id="sys-comment-input" value="${curVal}">
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div class="journal-cmd-line" style="margin-bottom: 20px;">
+                            <span class="bash-prefix">${renderIPHTML(visitorIP)}@sys:~$</span>
+                            <span class="journal-cmd-text" id="sys-cmd-text" style="width:0; overflow:hidden; display:inline-block; vertical-align:bottom; white-space:nowrap; transition:width 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);"></span>
                         </div>
-                    `;
-                } else {
-                    const placeholder = envName === 'SUB_PID' ? '> [ USERNAME ]' : '> [ CONTACT ]';
-                    let defaultVal = '';
-                    if (envName === 'SUB_PID') defaultVal = localStorage.getItem('tonhie_codename') || '';
-                    if (envName === 'PIPE') defaultVal = localStorage.getItem('tonhie_contact') || '';
+                        <div id="sys-output" style="opacity: 0; transform: translateY(10px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); font-family: var(--font-mono); line-height: 1.8;"></div>
+                    </div>
                     
-                    inner.innerHTML = `
-                        <input type="text" id="sys-comment-input" style="width: 100%; height: 44px; border: 1px solid var(--line-color); background: var(--bg-color); padding: 0 10px; box-sizing: border-box; font-family: var(--font-mono); font-size: 14px; outline: none; color: var(--text-color); transition: all 0.2s;" placeholder="${placeholder}" value="${defaultVal}">
-                    `;
-                    setTimeout(() => { const el = document.getElementById('sys-comment-input'); if(el) el.focus(); }, 50);
-                }
+                    <div style="flex: 1; min-width: 250px; border-left: 2px dashed var(--dash-color); padding-left: 30px;">
+                        <div style="font-family: var(--font-mono); font-weight: bold; margin-bottom: 25px; color: var(--sub-text-color);">// SYS_ENV_VARIABLES</div>
+                        <div class="env-configs" id="sys-env" style="margin-top: 0; opacity: 0; transform: translateY(10px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+                            <div class="env-item">
+                                <span class="env-name">\${THEME_MODE}</span>="<span id="theme-val" class="env-toggle" onclick="toggleTheme()"></span>"
+                            </div>
+                            <div class="env-item">
+                                <span class="env-name">\${SUB_PROCESS_ID}</span>="<input type="text" id="sub-codename" class="env-value-interactive" placeholder="guest" value="\${localStorage.getItem('tonhie_codename')||''}" onchange="localStorage.setItem('tonhie_codename', this.value)"/>"
+                            </div>
+                            <div class="env-item">
+                                <span class="env-name">\${SUB_PROCESS_PING}</span>="<input type="text" id="sub-contact" class="env-value-interactive" placeholder="Email/Contact" value="\${localStorage.getItem('tonhie_contact')||''}" onchange="localStorage.setItem('tonhie_contact', this.value)"/>"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup current theme value
+            document.getElementById('theme-val').textContent = document.documentElement.getAttribute('data-theme') || 'light';
+
+            // Trigger typing effect for cmd
+            setTimeout(() => {
+                const cmdEl = document.getElementById('sys-cmd-text');
+                if(!cmdEl) return;
+                cmdEl.textContent = 'cat /etc/tonhie/about.txt';
+                cmdEl.style.width = 'auto';
+                const targetW = cmdEl.offsetWidth + 'px';
+                cmdEl.style.width = '0px';
+                void cmdEl.offsetWidth;
+                cmdEl.style.width = targetW;
                 
-                inner.style.opacity = 1;
-                inner.style.transform = 'translateY(0)';
-            }, 200);
-        }
-
-        async function submitSysConfig() {
-            let val = '';
-            const inputEl = document.getElementById('sys-comment-input');
-            if(inputEl) val = inputEl.value.trim();
-            if(!val) return;
-
-            if (currentSysEnv === 'THEME') {
-                if(val === 'dark' || val === 'light') {
-                    document.documentElement.setAttribute('data-theme', val);
-                    localStorage.setItem('tonhie_theme', val);
-                    const valEl = document.getElementById('theme-val');
-                    if (valEl) valEl.textContent = val;
-                }
-            } else if (currentSysEnv === 'SUB_PID') {
-                localStorage.setItem('tonhie_codename', val);
-                const cnEl = document.getElementById('sub-codename');
-                if (cnEl) cnEl.value = val;
-            } else if (currentSysEnv === 'PIPE') {
-                localStorage.setItem('tonhie_contact', val);
-                const ctEl = document.getElementById('sub-contact');
-                if (ctEl) ctEl.value = val;
-            }
-            
-            try {
-                const res = await fetch(`${API_URL}/sys_logs`, {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ env_key: currentSysEnv, env_val: val })
-                });
-                if(res.ok) {
-                    await loadComments();
-                }
-            } catch(e) {
-                console.warn('sys log inject fail');
-            }
+                // Show output text via typewriter
+                setTimeout(() => {
+                    document.getElementById('sys-output').style.opacity = '1';
+                    document.getElementById('sys-output').style.transform = 'translateY(0)';
+                    document.getElementById('sys-env').style.opacity = '1';
+                    document.getElementById('sys-env').style.transform = 'translateY(0)';
+                    
+                    const outText = "Tonhie.log - Terminal style minimal blog system.\n- 移除所有冗余设计\n- 黑白纯净体验\n- 状态码监控驱动\n> RUNNING NORMALLY.";
+                    let i = 0;
+                    const outEl = document.getElementById('sys-output');
+                    outEl.innerHTML = '';
+                    clearInterval(sysInfoTypeInterval);
+                    sysInfoTypeInterval = setInterval(() => {
+                        outEl.innerHTML += outText.charAt(i) === '\n' ? '<br>' : outText.charAt(i);
+                        i++;
+                        if (i >= outText.length) {
+                            clearInterval(sysInfoTypeInterval);
+                            setTimeout(() => {
+                                document.getElementById('sys-env').style.opacity = '1';
+                                document.getElementById('sys-env').style.transform = 'translateY(0)';
+                            }, 200);
+                        }
+                    }, 15);
+                }, 800);
+            }, 50);
         }
 
         function closeModal() {
@@ -1267,47 +1150,6 @@
         async function loadComments() {
             if(!currentPostId) return;
             const list = document.getElementById('comment-list');
-            
-            if (currentPostId === 'sys') {
-                document.getElementById('comments-header').innerText = '> SYS_CONFIG / Environment Logs';
-                document.getElementById('comment-input-section').style.display = 'none';
-                document.getElementById('sys-input-section').style.display = 'flex';
-                // Trigger selectSysEnv manually without transition? No, just ensuring it's shown:
-                selectSysEnv(currentSysEnv);
-                
-                try {
-                    const response = await fetch(`${API_URL}/sys_logs`);
-                    const result = await response.json();
-                    let logsHTML = '';
-                    const myLogs = result.data || [];
-                    
-                    if (myLogs.length === 0) {
-                        logsHTML = '<div style="opacity:0; animation: slideUpFade 0.4s forwards;">> No records found.</div>';
-                    } else {
-                        // Reverse so newest is at the bottom (like terminal logs)
-                        [...myLogs].reverse().forEach((l, i) => {
-                            const ipHtml = renderIPHTML(l.ip_address || visitorIP, true);
-                            logsHTML += `
-                                <div class="comment-item" style="animation-delay: ${i * 0.1}s;">
-                                    <div class="comment-meta">
-                                        [IP: <span style="color:var(--color-error)">${ipHtml}</span>] SET ${l.env_key}
-                                        <span style="float:right;">${formatDisplayDate(l.created_at)}</span>
-                                    </div>
-                                    <div style="white-space: pre-wrap;">$ export ${l.env_key}="${l.env_val.replace(/</g, '&lt;').replace(/>/g, '&gt;')}"</div>
-                                </div>
-                            `;
-                        });
-                    }
-                    list.innerHTML = logsHTML;
-                } catch(e) {
-                    list.innerHTML = '<div style="color:var(--color-error); opacity:0; animation: slideUpFade 0.4s forwards;">> ERROR: FETCH FAILED_</div>';
-                }
-                return;
-            }
-
-            document.getElementById('comments-header').innerText = '> SYSLOG / Subprocess Injections';
-            document.getElementById('comment-input-section').style.display = 'block';
-            document.getElementById('sys-input-section').style.display = 'none';
             
             // Cmd typing style loader
             list.innerHTML = `
@@ -1551,6 +1393,5 @@
             }
         });
     </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"a48118ad508b46c086b46ce66146f3d1","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
