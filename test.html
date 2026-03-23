@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<style>
+.container {
+  height: 200px;
+  width: 300px;
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid black;
+}
+.sticky {
+  position: sticky;
+  top: 0;
+  margin: -20px -20px 20px -20px;
+  padding: 15px 20px;
+  background: red;
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+<body>
+  <div class="container">
+    <div class="sticky"><span>LEFT</span><span>RIGHT</span></div>
+    <div>Content<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>End</div>
+  </div>
+</body>
+</html>
