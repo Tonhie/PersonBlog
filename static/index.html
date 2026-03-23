@@ -303,10 +303,10 @@
             overflow: hidden;
             padding: 0;
             opacity: 0;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-out, padding 0.6s cubic-bezier(0.25, 1, 0.5, 1), transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
             display: flex;
             flex-direction: column;
-            transform: scale(0.95) translateY(40px);
+            transform: scale(0.95) translateX(-40px);
         }
         .modal-comments > * {
             min-width: 440px;
@@ -315,7 +315,7 @@
             width: 480px;
             padding: 40px 20px;
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: scale(1) translateX(0);
         }
 
         /* 模态控制按钮 */
@@ -344,7 +344,7 @@
             font-family: var(--font-mono);
             cursor: pointer;
             padding: 5px 15px;
-            transition: all 0.2s ease-in-out;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, color 0.3s ease;
             font-weight: bold;
         }
         button.t-btn:hover {
@@ -422,7 +422,7 @@
             color: var(--text-color);
             cursor: pointer;
             font-family: var(--font-mono);
-            transition: all 0.2s;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, color 0.3s ease;
         }
         .desktop-submit-btn:hover {
             background: var(--text-color);
@@ -636,7 +636,7 @@
         .mobile-mode .modal-wrapper {
             display: flex;
             flex-direction: column;
-            height: 100vh; /* 确保容器占满全屏 */
+            height: 100%; /* 确保容器占满全屏，并能跟随 overlay 一同收缩 */
             max-width: 100vw;
             filter: none;
             box-shadow: none;
@@ -676,7 +676,7 @@
             padding: 20px 15px;
             box-sizing: border-box;
             transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease;
             z-index: 50;
         }
         .mobile-mode .modal-comments > * {
@@ -1173,7 +1173,7 @@
             const injectBtns = [document.getElementById('inject-btn'), document.getElementById('inject-btn-mobile')];
             injectBtns.forEach(btn => {
                 if (btn) {
-                    btn.textContent = '[ FORK ]';
+                    btn.innerHTML = '<span class="btn-text-inner" style="display:inline-block; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);">[ FORK ]</span>';
                     btn.style.display = 'block';
                 }
             });
@@ -1235,7 +1235,7 @@
             const injectBtns = [document.getElementById('inject-btn'), document.getElementById('inject-btn-mobile')];
             injectBtns.forEach(btn => {
                 if (btn) {
-                    btn.textContent = '[ CONFIG ]';
+                    btn.innerHTML = '<span class="btn-text-inner" style="display:inline-block; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);">[ CONFIG ]</span>';
                     btn.style.display = 'block';
                 }
             });
@@ -1392,6 +1392,34 @@
         }
 
         /* =================评论注入面板与API================= */
+        function animateBtnText(btn, newText) {
+            if (!btn) return;
+            const cleanText = newText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            if (btn.textContent.trim() === newText.trim()) return;
+            
+            let span = btn.querySelector('span.btn-text-inner');
+            if (!span) {
+                btn.innerHTML = `<span class="btn-text-inner" style="display:inline-block; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);">${btn.innerHTML}</span>`;
+                span = btn.querySelector('span.btn-text-inner');
+            }
+            
+            span.style.transition = 'opacity 0.15s ease, transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)';
+            span.style.opacity = '0';
+            span.style.transform = 'translateY(-5px)';
+            
+            setTimeout(() => {
+                span.style.transition = 'none';
+                span.innerHTML = cleanText;
+                span.style.transform = 'translateY(5px)';
+                
+                void span.offsetHeight; // force reflow
+                
+                span.style.transition = 'opacity 0.2s ease, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)';
+                span.style.transform = 'translateY(0)';
+                span.style.opacity = '1';
+            }, 150);
+        }
+
         async function toggleInject() {
             const overlay = document.getElementById('read-modal');
             const injectBtns = [document.getElementById('inject-btn'), document.getElementById('inject-btn-mobile')];
@@ -1399,16 +1427,16 @@
             if (overlay.classList.contains('injected')) {
                 overlay.classList.remove('injected');
                 if (currentPostId === 'sys') {
-                    injectBtns.forEach(btn => { if (btn) btn.textContent = '[ CONFIG ]'; });
+                    injectBtns.forEach(btn => animateBtnText(btn, '[ CONFIG ]'));
                 } else {
-                    injectBtns.forEach(btn => { if (btn) btn.textContent = '[ FORK ]'; });
+                    injectBtns.forEach(btn => animateBtnText(btn, '[ FORK ]'));
                 }
             } else {
                 overlay.classList.add('injected');
                 if (currentPostId === 'sys') {
-                    injectBtns.forEach(btn => { if (btn) btn.textContent = '[ DROP ]'; });
+                    injectBtns.forEach(btn => animateBtnText(btn, '[ DROP ]'));
                 } else {
-                    injectBtns.forEach(btn => { if (btn) btn.textContent = '[ HALT ]'; });
+                    injectBtns.forEach(btn => animateBtnText(btn, '[ HALT ]'));
                 }
                 await loadComments();
             }
